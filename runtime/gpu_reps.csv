@@ -1,0 +1,13 @@
+rep,mode,N,MSG,WCPU_us,ops,tput_ops_s,GBps
+1,busy,N=1,MSG=4096,WCPU_us=3.0,ops=57385,throughput_ops_s=28669,GBps=0.12
+1,coro,N=32,MSG=4096,WCPU_us=3.0,ops=272758,throughput_ops_s=136248,GBps=0.56
+2,busy,N=1,MSG=4096,WCPU_us=3.0,ops=57457,throughput_ops_s=28705,GBps=0.12
+2,coro,N=32,MSG=4096,WCPU_us=3.0,ops=273108,throughput_ops_s=136496,GBps=0.56
+3,busy,N=1,MSG=4096,WCPU_us=3.0,ops=57622,throughput_ops_s=28783,GBps=0.12
+3,coro,N=32,MSG=4096,WCPU_us=3.0,ops=274037,throughput_ops_s=136908,GBps=0.56
+4,busy,N=1,MSG=4096,WCPU_us=3.0,ops=56962,throughput_ops_s=28452,GBps=0.12
+4,coro,N=32,MSG=4096,WCPU_us=3.0,ops=275122,throughput_ops_s=137431,GBps=0.56
+5,busy,N=1,MSG=4096,WCPU_us=3.0,ops=57382,throughput_ops_s=28677,GBps=0.12
+5,coro,N=32,MSG=4096,WCPU_us=3.0,ops=273390,throughput_ops_s=136572,GBps=0.56
+6,busy,N=1,MSG=4096,WCPU_us=3.0,ops=57336,throughput_ops_s=28643,GBps=0.12
+6,coro,N=32,MSG=4096,WCPU_us=3.0,ops=275231,throughput_ops_s=137485,GBps=0.56

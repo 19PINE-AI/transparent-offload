@@ -1,0 +1,15 @@
+mode,NKEY,C,commits,sum,lost_updates,fallbacks,fallback_pct,tput_ops_s
+naive,NKEY=1,C=64,commits=1280000,sum=20000,lost_updates=1260000,fallbacks=0,fallback_pct=0.00,tput_ops_s=3101105
+detect,NKEY=1,C=64,commits=1280000,sum=1280000,lost_updates=0,fallbacks=1279997,fallback_pct=100.00,tput_ops_s=3111968
+naive,NKEY=4,C=64,commits=1280000,sum=76437,lost_updates=1203563,fallbacks=0,fallback_pct=0.00,tput_ops_s=2858507
+detect,NKEY=4,C=64,commits=1280000,sum=1280000,lost_updates=0,fallbacks=1279987,fallback_pct=100.00,tput_ops_s=3112972
+naive,NKEY=16,C=64,commits=1280000,sum=265281,lost_updates=1014719,fallbacks=0,fallback_pct=0.00,tput_ops_s=2842769
+detect,NKEY=16,C=64,commits=1280000,sum=1280000,lost_updates=0,fallbacks=1267448,fallback_pct=99.02,tput_ops_s=3122345
+naive,NKEY=64,C=64,commits=1280000,sum=686901,lost_updates=593099,fallbacks=0,fallback_pct=0.00,tput_ops_s=2851827
+detect,NKEY=64,C=64,commits=1280000,sum=1280000,lost_updates=0,fallbacks=737822,fallback_pct=57.64,tput_ops_s=3088257
+naive,NKEY=256,C=64,commits=1280000,sum=1214081,lost_updates=65919,fallbacks=0,fallback_pct=0.00,tput_ops_s=2841242
+detect,NKEY=256,C=64,commits=1280000,sum=1280000,lost_updates=0,fallbacks=48499,fallback_pct=3.79,tput_ops_s=3119083
+naive,NKEY=1024,C=64,commits=1280000,sum=1280000,lost_updates=0,fallbacks=0,fallback_pct=0.00,tput_ops_s=2901351
+detect,NKEY=1024,C=64,commits=1280000,sum=1280000,lost_updates=0,fallbacks=0,fallback_pct=0.00,tput_ops_s=3100563
+naive,NKEY=16384,C=64,commits=1280000,sum=1280000,lost_updates=0,fallbacks=0,fallback_pct=0.00,tput_ops_s=2826567
+detect,NKEY=16384,C=64,commits=1280000,sum=1280000,lost_updates=0,fallbacks=0,fallback_pct=0.00,tput_ops_s=3101065

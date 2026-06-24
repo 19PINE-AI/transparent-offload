@@ -1,0 +1,7 @@
+# corrected steady-state latency: mode,NCONN,L_us,ok,bad,tput_rps,p50,p99
+coro,NCONN=64,L_us=5,ok=438743,bad=0,tput_rps=292337,p50_us=195.4,p99_us=393.8
+block,NCONN=64,L_us=5,ok=283520,bad=0,tput_rps=188803,p50_us=24.3,p99_us=315.1
+coro,NCONN=64,L_us=20,ok=442758,bad=0,tput_rps=295024,p50_us=217.0,p99_us=354.4
+block,NCONN=64,L_us=20,ok=217543,bad=0,tput_rps=144875,p50_us=46.3,p99_us=321.8
+coro,NCONN=64,L_us=50,ok=445298,bad=0,tput_rps=296731,p50_us=203.0,p99_us=299.7
+block,NCONN=64,L_us=50,ok=184535,bad=0,tput_rps=121986,p50_us=145.8,p99_us=180.6

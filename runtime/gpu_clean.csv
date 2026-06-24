@@ -1,0 +1,8 @@
+mode,N,MSG,WCPU_us,ops,tput_ops_s,GBps
+busy,N=1,MSG=4096,WCPU_us=3.0,ops=43617,throughput_ops_s=21779,GBps=0.09
+coro,N=1,MSG=4096,WCPU_us=3.0,ops=43491,throughput_ops_s=21719,GBps=0.09
+coro,N=4,MSG=4096,WCPU_us=3.0,ops=187383,throughput_ops_s=93574,GBps=0.38
+coro,N=16,MSG=4096,WCPU_us=3.0,ops=269775,throughput_ops_s=134743,GBps=0.55
+coro,N=32,MSG=4096,WCPU_us=3.0,ops=273713,throughput_ops_s=136689,GBps=0.56
+coro,N=64,MSG=4096,WCPU_us=3.0,ops=276937,throughput_ops_s=138240,GBps=0.57
+coro,N=128,MSG=4096,WCPU_us=3.0,ops=278043,throughput_ops_s=138738,GBps=0.57
