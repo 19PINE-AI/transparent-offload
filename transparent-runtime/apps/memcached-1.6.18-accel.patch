@@ -1,0 +1,126 @@
+--- a/memcached.h
++++ b/memcached.h
+@@ -210,6 +210,7 @@
+     conn_closed,     /**< connection is closed */
+     conn_watch,      /**< held by the logger thread as a watcher */
+     conn_io_queue,   /**< wait on async. process to get response object */
++    conn_accel_wait, /* offload in progress */
+     conn_max_state   /**< Max state value (used for assertion) */
+ };
+ 
+@@ -807,6 +808,7 @@
+     bool ssl_enabled;
+ #endif
+     enum conn_states  state;
++    volatile int accel_pending; /* accel offload outstanding */
+     enum bin_substates substate;
+     rel_time_t last_cmd_time;
+     struct event event;
+--- a/memcached.c
++++ b/memcached.c
+@@ -564,6 +564,8 @@
+     } else if (c->state == conn_io_queue) {
+         // machine will know how to return based on secondary state.
+         drive_machine(c);
++    } else if (c->state == conn_accel_wait) {
++        drive_machine(c);
+     } else {
+         conn_set_state(c, conn_new_cmd);
+     }
+@@ -989,7 +991,8 @@
+                                        "conn_mwrite",
+                                        "conn_closed",
+                                        "conn_watch",
+-                                       "conn_io_queue" };
++                                       "conn_io_queue",
++                                       "conn_accel_wait" };
+     return statenames[state];
+ }
+ 
+@@ -3176,6 +3179,14 @@
+             }
+             break;
+ 
++        case conn_accel_wait:
++            if (c->accel_pending) {
++                stop = true;            /* offload running; suspend until redispatch */
++            } else {
++                out_string(c, "OK");    /* resumed after offload completed */
++            }
++            break;
++
+         case conn_nread:
+             if (c->rlbytes == 0) {
+                 complete_nread(c);
+--- a/proto_text.c
++++ b/proto_text.c
+@@ -2710,6 +2710,58 @@
+ // we can't drop out and back in again.
+ // Leaving this note here to spend more time on a fix when necessary, or if an
+ // opportunity becomes obvious.
++
++/* ---- accelerator offload (demo): worker pool + libaccel, sync vs async-overlap ---- */
++#include <dlfcn.h>
++static void (*accel_enc)(unsigned char*, int);
++#define ACCEL_QN 65536
++static conn *accel_q[ACCEL_QN];
++static volatile long accel_qh=0, accel_qt=0;
++static pthread_mutex_t accel_mx = PTHREAD_MUTEX_INITIALIZER;
++static pthread_cond_t  accel_cv = PTHREAD_COND_INITIALIZER;
++static int accel_ready=0;
++static void *accel_worker(void *a) {
++    unsigned char buf[4096];
++    for (;;) {
++        pthread_mutex_lock(&accel_mx);
++        while (accel_qh == accel_qt) pthread_cond_wait(&accel_cv, &accel_mx);
++        conn *c = accel_q[accel_qt % ACCEL_QN]; accel_qt++;
++        pthread_mutex_unlock(&accel_mx);
++        accel_enc(buf, 4096);          /* the offload (blocks this worker only) */
++        c->accel_pending = 0;
++        redispatch_conn(c);            /* resume the conn on its worker thread */
++    }
++    return NULL;
++}
++static void accel_init(void) {
++    if (accel_ready) return;
++    pthread_mutex_lock(&accel_mx);
++    if (!accel_ready) {
++        char *lib = getenv("ACCEL_LIB"); void *h = dlopen(lib?lib:"libaccel.so", RTLD_NOW|RTLD_GLOBAL);
++        *(void**)(&accel_enc) = dlsym(h, "accel_encrypt");
++        int nw = 16; char *e = getenv("ACCEL_WORKERS"); if (e) nw = atoi(e);
++        for (int i=0;i<nw;i++){ pthread_t t; pthread_create(&t,0,accel_worker,0); }
++        accel_ready = 1;
++    }
++    pthread_mutex_unlock(&accel_mx);
++}
++/* accelsync: offload on the worker's event loop (blocks it) */
++static void process_accel_sync(conn *c) {
++    unsigned char buf[4096]; accel_init(); accel_enc(buf, 4096);
++    out_string(c, "OK");
++}
++/* accelasync: hand offload to the pool, park the conn, reply on completion (overlap) */
++static void process_accel_async(conn *c) {
++    accel_init();
++    c->accel_pending = 1;
++    pthread_mutex_lock(&accel_mx);
++    accel_q[accel_qh % ACCEL_QN] = c; accel_qh++;
++    pthread_cond_signal(&accel_cv);
++    pthread_mutex_unlock(&accel_mx);
++    conn_set_state(c, conn_accel_wait);
++    event_del(&c->event);   /* like the io_queue path: drop the event while parked */
++}
++
+ void process_command_ascii(conn *c, char *command) {
+ 
+     token_t tokens[MAX_TOKENS];
+@@ -2811,6 +2863,10 @@
+ 
+             WANT_TOKENS_OR(ntokens, 6, 7);
+             process_update_command(c, tokens, ntokens, comm, false);
++        } else if (strcmp(tokens[COMMAND_TOKEN].value, "accelsync") == 0) {
++            process_accel_sync(c);
++        } else if (strcmp(tokens[COMMAND_TOKEN].value, "accelasync") == 0) {
++            process_accel_async(c);
+         } else {
+             out_string(c, "ERROR");
+         }
