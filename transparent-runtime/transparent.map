@@ -1,0 +1,7 @@
+GLIBC_2.3.2 {
+  global:
+    pthread_cond_signal;
+    pthread_cond_broadcast;
+    pthread_cond_wait;
+    pthread_cond_timedwait;
+};
