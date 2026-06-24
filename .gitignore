@@ -1,15 +1,65 @@
-# LaTeX build artifacts
-*.aux
-*.log
-*.out
-*.blg
-*.toc
-*.lof
-*.lot
-*.fls
-*.fdb_latexmk
-*.synctex.gz
+# =====================================================================
+#  Reproducibility policy: track our sources, scripts, configs, results,
+#  and patches to third-party code. Exclude anything downloaded or built
+#  (re-fetchable / re-buildable from those sources).
+# =====================================================================
 
-# Python
+# ---- LaTeX build artifacts (scoped to paper/ so research .out results are kept) ----
+/paper/*.aux
+/paper/*.blg
+/paper/*.out
+/paper/*.toc
+/paper/*.lof
+/paper/*.lot
+/paper/*.fls
+/paper/*.fdb_latexmk
+/paper/*.synctex.gz
+
+# ---- Python ----
 __pycache__/
 *.pyc
+
+# ---- Downloaded third-party source trees (re-fetch from upstream) ----
+conflict-measurement/openssl-3.0.2/
+conflict-measurement/zlib-1.3.1/
+transparent-runtime/apps/nginx-1.18.0/
+transparent-runtime/apps/memcached-1.6.18/
+# our memcached change is preserved as memcached-1.6.18-accel.patch (kept)
+
+# ---- Downloaded archives ----
+*.tar.gz
+*.tgz
+*.zip
+
+# ---- Compiled artifacts ----
+*.o
+*.a
+*.so
+*.class
+*.lo
+*.slo
+*.la
+*.lai
+*.bc
+*.d
+.libs/
+.deps/
+# node-gyp / libuv addon build tree (source is accel.c + binding.gyp)
+transparent-runtime/apps/node_accel/build/
+# apache module libtool run dir
+transparent-runtime/apps/ap_accel/run/
+
+# ---- Database / server runtime state ----
+transparent-runtime/apps/pgdata/
+transparent-runtime/apps/maria_accel/mdata/
+transparent-runtime/maria-test/
+transparent-runtime/ap/logs/
+transparent-runtime/apache-test/logs/
+transparent-runtime/nginx-test/logs/
+transparent-runtime/apps/nginx-run/logs/
+transparent-runtime/apps/nginx-run/*_temp/
+
+# ---- Logs, pids, sockets ----
+*.log
+*.pid
+*.sock
