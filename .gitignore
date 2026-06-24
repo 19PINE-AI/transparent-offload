@@ -98,3 +98,9 @@ transparent-runtime/apps/nginx-run/*_temp/
 /transparent-runtime/hostile_server
 /transparent-runtime/infer_server
 /transparent-runtime/stunnel-test/echo_backend
+
+# ---- Self-signed TEST certificates / sessions (regenerate via local gen-certs.sh) ----
+*.pem
+*.crt
+*.key
+*.csr
