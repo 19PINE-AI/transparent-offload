@@ -1,0 +1,2 @@
+[mode=handshake threads=8 iters=1000 poscontrol=0]
+[done mode=handshake counter=0]

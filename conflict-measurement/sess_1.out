@@ -1,0 +1,2 @@
+[sess-socket NSERV=6 NCLI=6 run_ms=1500 port=18443]
+[done accepts=5147 resumptions=5141 sess_number=6 sess_accept=5147 sess_hit=5141]

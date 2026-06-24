@@ -1,0 +1,2 @@
+[pattern=ro_shared threads=16 iters=20000]
+[done counter=0 q_head=0 acc=10444800000 csum=0]

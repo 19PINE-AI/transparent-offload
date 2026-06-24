@@ -1,0 +1,202 @@
+==================
+WARNING: ThreadSanitizer: data race (pid=451096)
+  Read of size 4 at 0x5647b100e070 by thread T2:
+    #0 handler /home/ubuntu/transparent-offload/conflict-measurement/inference_skel.c:44 (inference_skel_tsan+0x15ef)
+
+  Previous write of size 4 at 0x5647b100e070 by thread T1:
+    #0 handler /home/ubuntu/transparent-offload/conflict-measurement/inference_skel.c:44 (inference_skel_tsan+0x1604)
+
+  Location is global 'q_head' of size 4 at 0x5647b100e070 (inference_skel_tsan+0x000000004070)
+
+  Thread T2 (tid=451099, running) created by main thread at:
+    #0 pthread_create ../../../../src/libsanitizer/tsan/tsan_interceptors_posix.cpp:969 (libtsan.so.0+0x605b8)
+    #1 main /home/ubuntu/transparent-offload/conflict-measurement/inference_skel.c:72 (inference_skel_tsan+0x17a4)
+
+  Thread T1 (tid=451098, running) created by main thread at:
+    #0 pthread_create ../../../../src/libsanitizer/tsan/tsan_interceptors_posix.cpp:969 (libtsan.so.0+0x605b8)
+    #1 main /home/ubuntu/transparent-offload/conflict-measurement/inference_skel.c:72 (inference_skel_tsan+0x17a4)
+
+SUMMARY: ThreadSanitizer: data race /home/ubuntu/transparent-offload/conflict-measurement/inference_skel.c:44 in handler
+==================
+==================
+WARNING: ThreadSanitizer: data race (pid=451096)
+  Read of size 4 at 0x5647b10100a0 by thread T2:
+    #0 handler /home/ubuntu/transparent-offload/conflict-measurement/inference_skel.c:48 (inference_skel_tsan+0x13dd)
+
+  Previous write of size 4 at 0x5647b10100a0 by thread T1:
+    #0 handler /home/ubuntu/transparent-offload/conflict-measurement/inference_skel.c:48 (inference_skel_tsan+0x13f6)
+
+  Location is global 'free_top' of size 4 at 0x5647b10100a0 (inference_skel_tsan+0x0000000060a0)
+
+  Thread T2 (tid=451099, running) created by main thread at:
+    #0 pthread_create ../../../../src/libsanitizer/tsan/tsan_interceptors_posix.cpp:969 (libtsan.so.0+0x605b8)
+    #1 main /home/ubuntu/transparent-offload/conflict-measurement/inference_skel.c:72 (inference_skel_tsan+0x17a4)
+
+  Thread T1 (tid=451098, finished) created by main thread at:
+    #0 pthread_create ../../../../src/libsanitizer/tsan/tsan_interceptors_posix.cpp:969 (libtsan.so.0+0x605b8)
+    #1 main /home/ubuntu/transparent-offload/conflict-measurement/inference_skel.c:72 (inference_skel_tsan+0x17a4)
+
+SUMMARY: ThreadSanitizer: data race /home/ubuntu/transparent-offload/conflict-measurement/inference_skel.c:48 in handler
+==================
+==================
+WARNING: ThreadSanitizer: data race (pid=451096)
+  Read of size 4 at 0x5647b10120bc by thread T3:
+    #0 handler /home/ubuntu/transparent-offload/conflict-measurement/inference_skel.c:48 (inference_skel_tsan+0x1408)
+
+  Previous write of size 4 at 0x5647b10120bc by thread T1:
+    #0 handler /home/ubuntu/transparent-offload/conflict-measurement/inference_skel.c:58 (inference_skel_tsan+0x1508)
+
+  Location is global 'free_list' of size 8192 at 0x5647b10100c0 (inference_skel_tsan+0x0000000080bc)
+
+  Thread T3 (tid=451100, running) created by main thread at:
+    #0 pthread_create ../../../../src/libsanitizer/tsan/tsan_interceptors_posix.cpp:969 (libtsan.so.0+0x605b8)
+    #1 main /home/ubuntu/transparent-offload/conflict-measurement/inference_skel.c:72 (inference_skel_tsan+0x17a4)
+
+  Thread T1 (tid=451098, finished) created by main thread at:
+    #0 pthread_create ../../../../src/libsanitizer/tsan/tsan_interceptors_posix.cpp:969 (libtsan.so.0+0x605b8)
+    #1 main /home/ubuntu/transparent-offload/conflict-measurement/inference_skel.c:72 (inference_skel_tsan+0x17a4)
+
+SUMMARY: ThreadSanitizer: data race /home/ubuntu/transparent-offload/conflict-measurement/inference_skel.c:48 in handler
+==================
+==================
+WARNING: ThreadSanitizer: data race (pid=451096)
+  Read of size 4 at 0x5647b1010098 by thread T2:
+    #0 handler /home/ubuntu/transparent-offload/conflict-measurement/inference_skel.c:49 (inference_skel_tsan+0x141f)
+
+  Previous write of size 4 at 0x5647b1010098 by thread T1:
+    #0 handler /home/ubuntu/transparent-offload/conflict-measurement/inference_skel.c:50 (inference_skel_tsan+0x13ba)
+
+  Location is global 'block_owner' of size 8192 at 0x5647b100e0a0 (inference_skel_tsan+0x000000006098)
+
+  Thread T2 (tid=451099, running) created by main thread at:
+    #0 pthread_create ../../../../src/libsanitizer/tsan/tsan_interceptors_posix.cpp:969 (libtsan.so.0+0x605b8)
+    #1 main /home/ubuntu/transparent-offload/conflict-measurement/inference_skel.c:72 (inference_skel_tsan+0x17a4)
+
+  Thread T1 (tid=451098, finished) created by main thread at:
+    #0 pthread_create ../../../../src/libsanitizer/tsan/tsan_interceptors_posix.cpp:969 (libtsan.so.0+0x605b8)
+    #1 main /home/ubuntu/transparent-offload/conflict-measurement/inference_skel.c:72 (inference_skel_tsan+0x17a4)
+
+SUMMARY: ThreadSanitizer: data race /home/ubuntu/transparent-offload/conflict-measurement/inference_skel.c:49 in handler
+==================
+==================
+WARNING: ThreadSanitizer: data race (pid=451096)
+  Read of size 4 at 0x5647b100e06c by thread T3:
+    #0 handler /home/ubuntu/transparent-offload/conflict-measurement/inference_skel.c:59 (inference_skel_tsan+0x154b)
+
+  Previous write of size 4 at 0x5647b100e06c by thread T1:
+    #0 handler /home/ubuntu/transparent-offload/conflict-measurement/inference_skel.c:59 (inference_skel_tsan+0x1571)
+
+  Location is global 'q_tail' of size 4 at 0x5647b100e06c (inference_skel_tsan+0x00000000406c)
+
+  Thread T3 (tid=451100, running) created by main thread at:
+    #0 pthread_create ../../../../src/libsanitizer/tsan/tsan_interceptors_posix.cpp:969 (libtsan.so.0+0x605b8)
+    #1 main /home/ubuntu/transparent-offload/conflict-measurement/inference_skel.c:72 (inference_skel_tsan+0x17a4)
+
+  Thread T1 (tid=451098, finished) created by main thread at:
+    #0 pthread_create ../../../../src/libsanitizer/tsan/tsan_interceptors_posix.cpp:969 (libtsan.so.0+0x605b8)
+    #1 main /home/ubuntu/transparent-offload/conflict-measurement/inference_skel.c:72 (inference_skel_tsan+0x17a4)
+
+SUMMARY: ThreadSanitizer: data race /home/ubuntu/transparent-offload/conflict-measurement/inference_skel.c:59 in handler
+==================
+==================
+WARNING: ThreadSanitizer: data race (pid=451096)
+  Write of size 4 at 0x5647b10120a4 by thread T3:
+    #0 handler /home/ubuntu/transparent-offload/conflict-measurement/inference_skel.c:58 (inference_skel_tsan+0x1508)
+
+  Previous write of size 4 at 0x5647b10120a4 by thread T2:
+    #0 handler /home/ubuntu/transparent-offload/conflict-measurement/inference_skel.c:58 (inference_skel_tsan+0x1508)
+
+  Location is global 'free_list' of size 8192 at 0x5647b10100c0 (inference_skel_tsan+0x0000000080a4)
+
+  Thread T3 (tid=451100, running) created by main thread at:
+    #0 pthread_create ../../../../src/libsanitizer/tsan/tsan_interceptors_posix.cpp:969 (libtsan.so.0+0x605b8)
+    #1 main /home/ubuntu/transparent-offload/conflict-measurement/inference_skel.c:72 (inference_skel_tsan+0x17a4)
+
+  Thread T2 (tid=451099, running) created by main thread at:
+    #0 pthread_create ../../../../src/libsanitizer/tsan/tsan_interceptors_posix.cpp:969 (libtsan.so.0+0x605b8)
+    #1 main /home/ubuntu/transparent-offload/conflict-measurement/inference_skel.c:72 (inference_skel_tsan+0x17a4)
+
+SUMMARY: ThreadSanitizer: data race /home/ubuntu/transparent-offload/conflict-measurement/inference_skel.c:58 in handler
+==================
+==================
+WARNING: ThreadSanitizer: data race (pid=451096)
+  Read of size 4 at 0x5647b1010048 by thread T4:
+    #0 handler /home/ubuntu/transparent-offload/conflict-measurement/inference_skel.c:49 (inference_skel_tsan+0x141f)
+
+  Previous write of size 4 at 0x5647b1010048 by thread T3:
+    #0 handler /home/ubuntu/transparent-offload/conflict-measurement/inference_skel.c:58 (inference_skel_tsan+0x14ef)
+
+  Location is global 'block_owner' of size 8192 at 0x5647b100e0a0 (inference_skel_tsan+0x000000006048)
+
+  Thread T4 (tid=451101, running) created by main thread at:
+    #0 pthread_create ../../../../src/libsanitizer/tsan/tsan_interceptors_posix.cpp:969 (libtsan.so.0+0x605b8)
+    #1 main /home/ubuntu/transparent-offload/conflict-measurement/inference_skel.c:72 (inference_skel_tsan+0x17a4)
+
+  Thread T3 (tid=451100, running) created by main thread at:
+    #0 pthread_create ../../../../src/libsanitizer/tsan/tsan_interceptors_posix.cpp:969 (libtsan.so.0+0x605b8)
+    #1 main /home/ubuntu/transparent-offload/conflict-measurement/inference_skel.c:72 (inference_skel_tsan+0x17a4)
+
+SUMMARY: ThreadSanitizer: data race /home/ubuntu/transparent-offload/conflict-measurement/inference_skel.c:49 in handler
+==================
+==================
+WARNING: ThreadSanitizer: data race (pid=451096)
+  Write of size 4 at 0x5647b100ffec by thread T5:
+    #0 handler /home/ubuntu/transparent-offload/conflict-measurement/inference_skel.c:50 (inference_skel_tsan+0x13ba)
+
+  Previous write of size 4 at 0x5647b100ffec by thread T3:
+    #0 handler /home/ubuntu/transparent-offload/conflict-measurement/inference_skel.c:50 (inference_skel_tsan+0x13ba)
+
+  Location is global 'block_owner' of size 8192 at 0x5647b100e0a0 (inference_skel_tsan+0x000000005fec)
+
+  Thread T5 (tid=451102, running) created by main thread at:
+    #0 pthread_create ../../../../src/libsanitizer/tsan/tsan_interceptors_posix.cpp:969 (libtsan.so.0+0x605b8)
+    #1 main /home/ubuntu/transparent-offload/conflict-measurement/inference_skel.c:72 (inference_skel_tsan+0x17a4)
+
+  Thread T3 (tid=451100, running) created by main thread at:
+    #0 pthread_create ../../../../src/libsanitizer/tsan/tsan_interceptors_posix.cpp:969 (libtsan.so.0+0x605b8)
+    #1 main /home/ubuntu/transparent-offload/conflict-measurement/inference_skel.c:72 (inference_skel_tsan+0x17a4)
+
+SUMMARY: ThreadSanitizer: data race /home/ubuntu/transparent-offload/conflict-measurement/inference_skel.c:50 in handler
+==================
+==================
+WARNING: ThreadSanitizer: data race (pid=451096)
+  Write of size 4 at 0x5647b100fd30 by thread T5:
+    #0 handler /home/ubuntu/transparent-offload/conflict-measurement/inference_skel.c:58 (inference_skel_tsan+0x14ef)
+
+  Previous write of size 4 at 0x5647b100fd30 by thread T3:
+    #0 handler /home/ubuntu/transparent-offload/conflict-measurement/inference_skel.c:50 (inference_skel_tsan+0x13ba)
+
+  Location is global 'block_owner' of size 8192 at 0x5647b100e0a0 (inference_skel_tsan+0x000000005d30)
+
+  Thread T5 (tid=451102, running) created by main thread at:
+    #0 pthread_create ../../../../src/libsanitizer/tsan/tsan_interceptors_posix.cpp:969 (libtsan.so.0+0x605b8)
+    #1 main /home/ubuntu/transparent-offload/conflict-measurement/inference_skel.c:72 (inference_skel_tsan+0x17a4)
+
+  Thread T3 (tid=451100, running) created by main thread at:
+    #0 pthread_create ../../../../src/libsanitizer/tsan/tsan_interceptors_posix.cpp:969 (libtsan.so.0+0x605b8)
+    #1 main /home/ubuntu/transparent-offload/conflict-measurement/inference_skel.c:72 (inference_skel_tsan+0x17a4)
+
+SUMMARY: ThreadSanitizer: data race /home/ubuntu/transparent-offload/conflict-measurement/inference_skel.c:58 in handler
+==================
+==================
+WARNING: ThreadSanitizer: data race (pid=451096)
+  Write of size 4 at 0x5647b100fae8 by thread T3:
+    #0 handler /home/ubuntu/transparent-offload/conflict-measurement/inference_skel.c:58 (inference_skel_tsan+0x14ef)
+
+  Previous write of size 4 at 0x5647b100fae8 by thread T5:
+    #0 handler /home/ubuntu/transparent-offload/conflict-measurement/inference_skel.c:58 (inference_skel_tsan+0x14ef)
+
+  Location is global 'block_owner' of size 8192 at 0x5647b100e0a0 (inference_skel_tsan+0x000000005ae8)
+
+  Thread T3 (tid=451100, running) created by main thread at:
+    #0 pthread_create ../../../../src/libsanitizer/tsan/tsan_interceptors_posix.cpp:969 (libtsan.so.0+0x605b8)
+    #1 main /home/ubuntu/transparent-offload/conflict-measurement/inference_skel.c:72 (inference_skel_tsan+0x17a4)
+
+  Thread T5 (tid=451102, running) created by main thread at:
+    #0 pthread_create ../../../../src/libsanitizer/tsan/tsan_interceptors_posix.cpp:969 (libtsan.so.0+0x605b8)
+    #1 main /home/ubuntu/transparent-offload/conflict-measurement/inference_skel.c:72 (inference_skel_tsan+0x17a4)
+
+SUMMARY: ThreadSanitizer: data race /home/ubuntu/transparent-offload/conflict-measurement/inference_skel.c:58 in handler
+==================
+ThreadSanitizer: reported 10 warnings
+unlocked,threads=8,handled=160000,double_alloc=46178,blocks_leaked=2047,blocks_still_owned=0

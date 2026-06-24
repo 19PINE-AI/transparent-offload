@@ -1,0 +1,25 @@
+[mode=poscontrol threads=4 iters=200 poscontrol=1]
+==================
+WARNING: ThreadSanitizer: data race (pid=4065750)
+  Read of size 8 at 0x564cfa855a00 by thread T2:
+    #0 do_exchange /home/ubuntu/transparent-offload/conflict-measurement/harness.c:97 (harness+0x728de)
+    #1 worker_data /home/ubuntu/transparent-offload/conflict-measurement/harness.c:120 (harness+0x72af3)
+
+  Previous write of size 8 at 0x564cfa855a00 by thread T1:
+    #0 do_exchange /home/ubuntu/transparent-offload/conflict-measurement/harness.c:97 (harness+0x728f3)
+    #1 worker_data /home/ubuntu/transparent-offload/conflict-measurement/harness.c:120 (harness+0x72af3)
+
+  Location is global 'shared_counter' of size 8 at 0x564cfa855a00 (harness+0x000000478a00)
+
+  Thread T2 (tid=4065753, running) created by main thread at:
+    #0 pthread_create ../../../../src/libsanitizer/tsan/tsan_interceptors_posix.cpp:969 (libtsan.so.0+0x605b8)
+    #1 main /home/ubuntu/transparent-offload/conflict-measurement/harness.c:157 (harness+0x73026)
+
+  Thread T1 (tid=4065752, running) created by main thread at:
+    #0 pthread_create ../../../../src/libsanitizer/tsan/tsan_interceptors_posix.cpp:969 (libtsan.so.0+0x605b8)
+    #1 main /home/ubuntu/transparent-offload/conflict-measurement/harness.c:157 (harness+0x73026)
+
+SUMMARY: ThreadSanitizer: data race /home/ubuntu/transparent-offload/conflict-measurement/harness.c:97 in do_exchange
+==================
+[done mode=poscontrol counter=204544]
+ThreadSanitizer: reported 1 warnings

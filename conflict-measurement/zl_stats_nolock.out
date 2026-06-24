@@ -1,0 +1,69 @@
+[zlib mode=stats_nolock threads=16 iters=3000]
+==================
+WARNING: ThreadSanitizer: data race (pid=4086758)
+  Read of size 8 at 0x55eea6ccb070 by thread T2:
+    #0 handle /home/ubuntu/transparent-offload/conflict-measurement/zlib_harness.c:44 (zlib_harness+0x16cc)
+    #1 worker /home/ubuntu/transparent-offload/conflict-measurement/zlib_harness.c:55 (zlib_harness+0x16cc)
+
+  Previous write of size 8 at 0x55eea6ccb070 by thread T1:
+    #0 handle /home/ubuntu/transparent-offload/conflict-measurement/zlib_harness.c:44 (zlib_harness+0x1702)
+    #1 worker /home/ubuntu/transparent-offload/conflict-measurement/zlib_harness.c:55 (zlib_harness+0x1702)
+
+  Location is global 'stats' of size 24 at 0x55eea6ccb070 (zlib_harness+0x000000015070)
+
+  Thread T2 (tid=4086761, running) created by main thread at:
+    #0 pthread_create ../../../../src/libsanitizer/tsan/tsan_interceptors_posix.cpp:969 (libtsan.so.0+0x605b8)
+    #1 main /home/ubuntu/transparent-offload/conflict-measurement/zlib_harness.c:76 (zlib_harness+0x19a1)
+
+  Thread T1 (tid=4086760, running) created by main thread at:
+    #0 pthread_create ../../../../src/libsanitizer/tsan/tsan_interceptors_posix.cpp:969 (libtsan.so.0+0x605b8)
+    #1 main /home/ubuntu/transparent-offload/conflict-measurement/zlib_harness.c:76 (zlib_harness+0x19a1)
+
+SUMMARY: ThreadSanitizer: data race /home/ubuntu/transparent-offload/conflict-measurement/zlib_harness.c:44 in handle
+==================
+==================
+WARNING: ThreadSanitizer: data race (pid=4086758)
+  Read of size 8 at 0x55eea6ccb078 by thread T3:
+    #0 handle /home/ubuntu/transparent-offload/conflict-measurement/zlib_harness.c:45 (zlib_harness+0x171c)
+    #1 worker /home/ubuntu/transparent-offload/conflict-measurement/zlib_harness.c:55 (zlib_harness+0x171c)
+
+  Previous write of size 8 at 0x55eea6ccb078 by thread T1:
+    #0 handle /home/ubuntu/transparent-offload/conflict-measurement/zlib_harness.c:45 (zlib_harness+0x1734)
+    #1 worker /home/ubuntu/transparent-offload/conflict-measurement/zlib_harness.c:55 (zlib_harness+0x1734)
+
+  Location is global 'stats' of size 24 at 0x55eea6ccb070 (zlib_harness+0x000000015078)
+
+  Thread T3 (tid=4086762, running) created by main thread at:
+    #0 pthread_create ../../../../src/libsanitizer/tsan/tsan_interceptors_posix.cpp:969 (libtsan.so.0+0x605b8)
+    #1 main /home/ubuntu/transparent-offload/conflict-measurement/zlib_harness.c:76 (zlib_harness+0x19a1)
+
+  Thread T1 (tid=4086760, running) created by main thread at:
+    #0 pthread_create ../../../../src/libsanitizer/tsan/tsan_interceptors_posix.cpp:969 (libtsan.so.0+0x605b8)
+    #1 main /home/ubuntu/transparent-offload/conflict-measurement/zlib_harness.c:76 (zlib_harness+0x19a1)
+
+SUMMARY: ThreadSanitizer: data race /home/ubuntu/transparent-offload/conflict-measurement/zlib_harness.c:45 in handle
+==================
+==================
+WARNING: ThreadSanitizer: data race (pid=4086758)
+  Read of size 8 at 0x55eea6ccb080 by thread T4:
+    #0 handle /home/ubuntu/transparent-offload/conflict-measurement/zlib_harness.c:46 (zlib_harness+0x1747)
+    #1 worker /home/ubuntu/transparent-offload/conflict-measurement/zlib_harness.c:55 (zlib_harness+0x1747)
+
+  Previous write of size 8 at 0x55eea6ccb080 by thread T1:
+    #0 handle /home/ubuntu/transparent-offload/conflict-measurement/zlib_harness.c:46 (zlib_harness+0x175a)
+    #1 worker /home/ubuntu/transparent-offload/conflict-measurement/zlib_harness.c:55 (zlib_harness+0x175a)
+
+  Location is global 'stats' of size 24 at 0x55eea6ccb070 (zlib_harness+0x000000015080)
+
+  Thread T4 (tid=4086763, running) created by main thread at:
+    #0 pthread_create ../../../../src/libsanitizer/tsan/tsan_interceptors_posix.cpp:969 (libtsan.so.0+0x605b8)
+    #1 main /home/ubuntu/transparent-offload/conflict-measurement/zlib_harness.c:76 (zlib_harness+0x19a1)
+
+  Thread T1 (tid=4086760, running) created by main thread at:
+    #0 pthread_create ../../../../src/libsanitizer/tsan/tsan_interceptors_posix.cpp:969 (libtsan.so.0+0x605b8)
+    #1 main /home/ubuntu/transparent-offload/conflict-measurement/zlib_harness.c:76 (zlib_harness+0x19a1)
+
+SUMMARY: ThreadSanitizer: data race /home/ubuntu/transparent-offload/conflict-measurement/zlib_harness.c:46 in handle
+==================
+[done in=392888320 out=3693921 count=47980]
+ThreadSanitizer: reported 3 warnings

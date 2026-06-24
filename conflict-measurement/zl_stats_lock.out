@@ -1,0 +1,2 @@
+[zlib mode=stats_lock threads=16 iters=3000]
+[done in=393216000 out=3696000 count=48000]

@@ -1,0 +1,2 @@
+[pattern=cache_lock threads=16 iters=20000]
+[done counter=0 q_head=0 acc=0 csum=512]

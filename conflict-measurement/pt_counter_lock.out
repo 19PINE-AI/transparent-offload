@@ -1,0 +1,2 @@
+[pattern=counter_lock threads=16 iters=20000]
+[done counter=-7605867530324939008 q_head=0 acc=0 csum=0]

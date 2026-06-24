@@ -1,0 +1,4 @@
+[mode=data threads=16 iters=4000 poscontrol=0]
+[prewarmed 3 handshakes single-threaded]
+[ctx sess_number=0 sess_accept=19 accept_good=19 sess_hit=0]
+[done mode=data counter=0]

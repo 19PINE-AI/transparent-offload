@@ -1,0 +1,3 @@
+[mode=handshake12 threads=16 iters=400 poscontrol=0]
+[ctx sess_number=0 sess_accept=6400 accept_good=6400 sess_hit=0]
+[done mode=handshake12 counter=0]

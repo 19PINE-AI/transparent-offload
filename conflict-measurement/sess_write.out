@@ -1,0 +1,23 @@
+[sess-socket NSERV=6 NCLI=6 run_ms=1500 port=18443]
+==================
+WARNING: ThreadSanitizer: data race (pid=321165)
+  Write of size 4 at 0x55e305f1ba00 by main thread:
+    #0 main /home/ubuntu/transparent-offload/conflict-measurement/sess_socket_harness.c:107 (sess_tsan+0x72cee)
+
+  Previous read of size 4 at 0x55e305f1ba00 by thread T2:
+    #0 server_thread /home/ubuntu/transparent-offload/conflict-measurement/sess_socket_harness.c:35 (sess_tsan+0x72499)
+
+  As if synchronized via sleep:
+    #0 usleep ../../../../src/libsanitizer/tsan/tsan_interceptors_posix.cpp:359 (libtsan.so.0+0x66547)
+    #1 main /home/ubuntu/transparent-offload/conflict-measurement/sess_socket_harness.c:106 (sess_tsan+0x72ce2)
+
+  Location is global 'stop' of size 4 at 0x55e305f1ba00 (sess_tsan+0x000000478a00)
+
+  Thread T2 (tid=321170, running) created by main thread at:
+    #0 pthread_create ../../../../src/libsanitizer/tsan/tsan_interceptors_posix.cpp:969 (libtsan.so.0+0x605b8)
+    #1 main /home/ubuntu/transparent-offload/conflict-measurement/sess_socket_harness.c:104 (sess_tsan+0x72c64)
+
+SUMMARY: ThreadSanitizer: data race /home/ubuntu/transparent-offload/conflict-measurement/sess_socket_harness.c:107 in main
+==================
+[done accepts=436 resumptions=0 sess_number=436 sess_accept=436 sess_hit=0]
+ThreadSanitizer: reported 1 warnings

@@ -1,0 +1,2 @@
+[mode=data threads=8 iters=2000 poscontrol=0]
+[done mode=data counter=0]

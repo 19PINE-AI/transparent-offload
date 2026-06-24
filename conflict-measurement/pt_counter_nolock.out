@@ -1,0 +1,25 @@
+[pattern=counter_nolock threads=16 iters=20000]
+==================
+WARNING: ThreadSanitizer: data race (pid=4091122)
+  Read of size 8 at 0x5618cc2800a8 by thread T2:
+    #0 postprocess /home/ubuntu/transparent-offload/conflict-measurement/pattern_taxonomy.c:55 (pattern_taxonomy+0x157c)
+    #1 worker /home/ubuntu/transparent-offload/conflict-measurement/pattern_taxonomy.c:68 (pattern_taxonomy+0x157c)
+
+  Previous write of size 8 at 0x5618cc2800a8 by thread T1:
+    #0 postprocess /home/ubuntu/transparent-offload/conflict-measurement/pattern_taxonomy.c:55 (pattern_taxonomy+0x158e)
+    #1 worker /home/ubuntu/transparent-offload/conflict-measurement/pattern_taxonomy.c:68 (pattern_taxonomy+0x158e)
+
+  Location is global 'g_counter' of size 8 at 0x5618cc2800a8 (pattern_taxonomy+0x0000000050a8)
+
+  Thread T2 (tid=4091125, running) created by main thread at:
+    #0 pthread_create ../../../../src/libsanitizer/tsan/tsan_interceptors_posix.cpp:969 (libtsan.so.0+0x605b8)
+    #1 main /home/ubuntu/transparent-offload/conflict-measurement/pattern_taxonomy.c:88 (pattern_taxonomy+0x1a32)
+
+  Thread T1 (tid=4091124, running) created by main thread at:
+    #0 pthread_create ../../../../src/libsanitizer/tsan/tsan_interceptors_posix.cpp:969 (libtsan.so.0+0x605b8)
+    #1 main /home/ubuntu/transparent-offload/conflict-measurement/pattern_taxonomy.c:88 (pattern_taxonomy+0x1a32)
+
+SUMMARY: ThreadSanitizer: data race /home/ubuntu/transparent-offload/conflict-measurement/pattern_taxonomy.c:55 in postprocess
+==================
+[done counter=-2390153500082962553 q_head=0 acc=0 csum=0]
+ThreadSanitizer: reported 1 warnings
