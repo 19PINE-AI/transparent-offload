@@ -1,0 +1,376 @@
+% ============================================================
+%  Fine-Grained Computation Offload for Event-Driven Applications
+%  Bibliography
+% ============================================================
+
+% ---------- Author's prior work / accelerator & NIC offload ----------
+
+@inproceedings{fastwake,
+  author    = {Li, Bojie and Xiang, Zihao and Wang, Xiaoliang and Ruan, Han and Zhou, Jingbin and Tan, Kun},
+  title     = {{FastWake}: Revisiting Host Network Stack for Interrupt-mode {RDMA}},
+  booktitle = {Proceedings of the 7th Asia-Pacific Workshop on Networking (APNet)},
+  year      = {2023},
+  pages     = {1--7},
+  publisher = {ACM},
+  doi       = {10.1145/3600061.3600063},
+}
+
+@inproceedings{kvdirect,
+  author    = {Li, Bojie and Ruan, Zhenyuan and Xiao, Wencong and Lu, Yuanwei and Xiong, Yongqiang and Putnam, Andrew and Chen, Enhong and Zhang, Lintao},
+  title     = {{KV-Direct}: High-Performance In-Memory Key-Value Store with Programmable {NIC}},
+  booktitle = {Proceedings of the 26th Symposium on Operating Systems Principles (SOSP)},
+  year      = {2017},
+  pages     = {137--152},
+}
+
+@inproceedings{ipipe,
+  author    = {Liu, Ming and Cui, Tianyi and Schuh, Henry and Krishnamurthy, Arvind and Peter, Simon and Gupta, Karan},
+  title     = {Offloading Distributed Applications onto {SmartNICs} using {iPipe}},
+  booktitle = {Proceedings of the 2018 ACM SIGCOMM Conference},
+  year      = {2018},
+  pages     = {318--333},
+}
+
+@inproceedings{clicknp,
+  author    = {Li, Bojie and Tan, Kun and Luo, Layong (Larry) and Peng, Yanqing and Luo, Renqian and Xu, Ningyi and Xiong, Yongqiang and Cheng, Peng and Chen, Enhong},
+  title     = {{ClickNP}: Highly Flexible and High Performance Network Processing with Reconfigurable Hardware},
+  booktitle = {Proceedings of the 2016 ACM SIGCOMM Conference},
+  year      = {2016},
+  pages     = {1--14},
+}
+
+% ---------- Microsecond-scale computing: the motivation ----------
+
+@article{microsecond,
+  author    = {Barroso, Luiz and Marty, Mike and Patterson, David and Ranganathan, Parthasarathy},
+  title     = {Attack of the Killer Microseconds},
+  journal   = {Communications of the ACM},
+  volume    = {60},
+  number    = {4},
+  pages     = {48--54},
+  year      = {2017},
+}
+
+% ---------- User-level threads, fibers, coroutines, scheduling ----------
+
+@misc{statethreads,
+  author       = {{State Threads Library}},
+  title        = {State Threads Library for Internet Applications},
+  howpublished = {\url{http://state-threads.sourceforge.net/}},
+  year         = {2009},
+}
+
+@misc{libtask,
+  author       = {Cox, Russ},
+  title        = {libtask: A Coroutine Library for {C} and {Unix}},
+  howpublished = {\url{https://swtch.com/libtask/}},
+  year         = {2005},
+}
+
+@inproceedings{capriccio,
+  author    = {von Behren, Rob and Condit, Jeremy and Zhou, Feng and Necula, George C. and Brewer, Eric},
+  title     = {Capriccio: Scalable Threads for Internet Services},
+  booktitle = {Proceedings of the 19th ACM Symposium on Operating Systems Principles (SOSP)},
+  year      = {2003},
+  pages     = {268--281},
+}
+
+@inproceedings{arachne,
+  author    = {Qin, Henry and Li, Qian and Speiser, Jacqueline and Kraft, Peter and Ousterhout, John},
+  title     = {Arachne: Core-Aware Thread Management},
+  booktitle = {Proceedings of the 13th USENIX Symposium on Operating Systems Design and Implementation (OSDI)},
+  year      = {2018},
+  pages     = {145--160},
+}
+
+@misc{golang,
+  author       = {{The Go Authors}},
+  title        = {The {Go} Programming Language: Goroutines and the Scheduler},
+  howpublished = {\url{https://go.dev/}},
+  year         = {2024},
+}
+
+@misc{loom,
+  author       = {{OpenJDK}},
+  title        = {{JEP} 444: Virtual Threads (Project {Loom})},
+  howpublished = {\url{https://openjdk.org/jeps/444}},
+  year         = {2023},
+}
+
+% ---------- Event-driven and staged server architectures ----------
+
+@inproceedings{seda,
+  author    = {Welsh, Matt and Culler, David and Brewer, Eric},
+  title     = {{SEDA}: An Architecture for Well-Conditioned, Scalable Internet Services},
+  booktitle = {Proceedings of the 18th ACM Symposium on Operating Systems Principles (SOSP)},
+  year      = {2001},
+  pages     = {230--243},
+}
+
+@inproceedings{flash,
+  author    = {Pai, Vivek S. and Druschel, Peter and Zwaenepoel, Willy},
+  title     = {Flash: An Efficient and Portable Web Server},
+  booktitle = {Proceedings of the USENIX Annual Technical Conference (ATC)},
+  year      = {1999},
+}
+
+% ---------- Kernel-bypass, dataplane OSes, microsecond scheduling ----------
+
+@inproceedings{ix,
+  author    = {Belay, Adam and Prekas, George and Klimovic, Ana and Grossman, Samuel and Kozyrakis, Christos and Bugnion, Edouard},
+  title     = {{IX}: A Protected Dataplane Operating System for High Throughput and Low Latency},
+  booktitle = {Proceedings of the 11th USENIX Symposium on Operating Systems Design and Implementation (OSDI)},
+  year      = {2014},
+  pages     = {49--65},
+}
+
+@inproceedings{zygos,
+  author    = {Prekas, George and Kogias, Marios and Bugnion, Edouard},
+  title     = {{ZygOS}: Achieving Low Tail Latency for Microsecond-scale Networked Tasks},
+  booktitle = {Proceedings of the 26th Symposium on Operating Systems Principles (SOSP)},
+  year      = {2017},
+  pages     = {325--341},
+}
+
+@inproceedings{shenango,
+  author    = {Ousterhout, Amy and Fried, Joshua and Behrens, Jonathan and Belay, Adam and Balakrishnan, Hari},
+  title     = {Shenango: Achieving High {CPU} Efficiency for Latency-sensitive Datacenter Workloads},
+  booktitle = {Proceedings of the 16th USENIX Symposium on Networked Systems Design and Implementation (NSDI)},
+  year      = {2019},
+  pages     = {361--378},
+}
+
+@inproceedings{caladan,
+  author    = {Fried, Joshua and Ruan, Zhenyuan and Ousterhout, Amy and Belay, Adam},
+  title     = {Caladan: Mitigating Interference at Microsecond Timescales},
+  booktitle = {Proceedings of the 14th USENIX Symposium on Operating Systems Design and Implementation (OSDI)},
+  year      = {2020},
+  pages     = {281--297},
+}
+
+@inproceedings{demikernel,
+  author    = {Zhang, Irene and Raybuck, Amanda and Patel, Pratyush and Olynyk, Kirk and Nelson, Jacob and Leija, Omar S. Navarro and Martinez, Ashlie and Liu, Jing and Simpson, Anna Kornfeld and Jayakar, Sujay and Penna, Pedro Henrique and Demoulin, Max and Choudhury, Piali and Badam, Anirudh},
+  title     = {The Demikernel Datapath {OS} Architecture for Microsecond-scale Datacenter Systems},
+  booktitle = {Proceedings of the 28th ACM Symposium on Operating Systems Principles (SOSP)},
+  year      = {2021},
+  pages     = {195--211},
+}
+
+@misc{dpdk,
+  author       = {{DPDK Project}},
+  title        = {{DPDK}: Data Plane Development Kit},
+  howpublished = {\url{https://www.dpdk.org/}},
+  year         = {2024},
+}
+
+@misc{iouring,
+  author       = {Axboe, Jens},
+  title        = {Efficient {IO} with {io\_uring}},
+  howpublished = {\url{https://kernel.dk/io_uring.pdf}},
+  year         = {2019},
+}
+
+% ---------- Accelerator offload: GPU, crypto, inference ----------
+
+@inproceedings{sslshader,
+  author    = {Jang, Keon and Han, Sangjin and Han, Seungyeop and Moon, Sue and Park, KyoungSoo},
+  title     = {{SSLShader}: Cheap {SSL} Acceleration with Commodity Processors},
+  booktitle = {Proceedings of the 8th USENIX Symposium on Networked Systems Design and Implementation (NSDI)},
+  year      = {2011},
+}
+
+@inproceedings{gpunet,
+  author    = {Kim, Sangman and Huh, Seonggu and Zhang, Xinya and Hu, Yige and Wated, Amir and Witchel, Emmett and Silberstein, Mark},
+  title     = {{GPUnet}: Networking Abstractions for {GPU} Programs},
+  booktitle = {Proceedings of the 11th USENIX Symposium on Operating Systems Design and Implementation (OSDI)},
+  year      = {2014},
+  pages     = {201--216},
+}
+
+@misc{qat,
+  author       = {{Intel Corporation}},
+  title        = {Intel QuickAssist Technology ({Intel QAT})},
+  howpublished = {\url{https://www.intel.com/content/www/us/en/architecture-and-technology/intel-quick-assist-technology-overview.html}},
+  year         = {2024},
+}
+
+@misc{redisai,
+  author       = {{RedisAI}},
+  title        = {{RedisAI}: A Redis Module for Serving Tensors and Executing Deep Learning Models},
+  howpublished = {\url{https://oss.redis.com/redisai/}},
+  year         = {2022},
+}
+
+@inproceedings{clipper,
+  author    = {Crankshaw, Daniel and Wang, Xin and Zhou, Giulio and Franklin, Michael J. and Gonzalez, Joseph E. and Stoica, Ion},
+  title     = {Clipper: A Low-Latency Online Prediction Serving System},
+  booktitle = {Proceedings of the 14th USENIX Symposium on Networked Systems Design and Implementation (NSDI)},
+  year      = {2017},
+  pages     = {613--627},
+}
+
+@misc{cudastreams,
+  author       = {{NVIDIA Corporation}},
+  title        = {{CUDA} {C++} Programming Guide: Asynchronous Concurrent Execution},
+  howpublished = {\url{https://docs.nvidia.com/cuda/cuda-c-programming-guide/}},
+  year         = {2024},
+}
+
+% ---------- Asynchronous server frameworks ----------
+
+@inproceedings{seastar,
+  author       = {{ScyllaDB}},
+  title        = {Seastar: A High-Performance Shared-Nothing Asynchronous {C++} Framework},
+  howpublished = {\url{https://seastar.io/}},
+  booktitle    = {\url{https://seastar.io/}},
+  year         = {2024},
+}
+
+@misc{libuv,
+  author       = {{libuv contributors}},
+  title        = {libuv: Cross-platform Asynchronous {I/O}},
+  howpublished = {\url{https://libuv.org/}},
+  year         = {2024},
+}
+
+@misc{libevent,
+  author       = {Provos, Niels and Mathewson, Nick},
+  title        = {libevent: An Event Notification Library},
+  howpublished = {\url{https://libevent.org/}},
+  year         = {2024},
+}
+
+% ---------- Conflict detection: DSM and transactional memory ----------
+
+@article{treadmarks,
+  author    = {Amza, Cristiana and Cox, Alan L. and Dwarkadas, Sandhya and Keleher, Pete and Lu, Honghui and Rajamony, Ramakrishnan and Yu, Weimin and Zwaenepoel, Willy},
+  title     = {{TreadMarks}: Shared Memory Computing on Networks of Workstations},
+  journal   = {IEEE Computer},
+  volume    = {29},
+  number    = {2},
+  pages     = {18--28},
+  year      = {1996},
+}
+
+@inproceedings{htm,
+  author    = {Herlihy, Maurice and Moss, J. Eliot B.},
+  title     = {Transactional Memory: Architectural Support for Lock-Free Data Structures},
+  booktitle = {Proceedings of the 20th Annual International Symposium on Computer Architecture (ISCA)},
+  year      = {1993},
+  pages     = {289--300},
+}
+
+% ---------- Proxy / sidecar offload engines ----------
+
+@misc{spoe,
+  author       = {{HAProxy Technologies}},
+  title        = {Stream Processing Offload Engine ({SPOE}) and Protocol ({SPOP})},
+  howpublished = {\url{https://www.haproxy.com/documentation/}},
+  year         = {2024},
+}
+
+@misc{extproc,
+  author       = {{Envoy Project}},
+  title        = {External Processing Filter ({ext\_proc})},
+  howpublished = {\url{https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/ext_proc_filter}},
+  year         = {2024},
+}
+
+% ---------- OS primitives: futexes, dynamic linking, versioning ----------
+
+@inproceedings{futexes,
+  author    = {Franke, Hubertus and Russell, Rusty and Kirkwood, Matthew},
+  title     = {Fuss, Futexes and Furwocks: Fast Userlevel Locking in {Linux}},
+  booktitle = {Proceedings of the Ottawa Linux Symposium (OLS)},
+  year      = {2002},
+  pages     = {479--495},
+}
+
+@misc{drepper,
+  author       = {Drepper, Ulrich},
+  title        = {How to Write Shared Libraries},
+  howpublished = {\url{https://www.akkadia.org/drepper/dsohowto.pdf}},
+  year         = {2011},
+}
+
+% ---------- Cryptography standards (remote/offloaded crypto workloads) ----------
+
+@techreport{mlkem,
+  author      = {{National Institute of Standards and Technology}},
+  title       = {Module-Lattice-Based Key-Encapsulation Mechanism Standard},
+  institution = {NIST},
+  number      = {FIPS 203},
+  year        = {2024},
+}
+
+@misc{openssl,
+  author       = {{OpenSSL Project}},
+  title        = {{OpenSSL}: Cryptography and {SSL/TLS} Toolkit},
+  howpublished = {\url{https://www.openssl.org/}},
+  year         = {2024},
+}
+
+% ---------- The evaluated production servers ----------
+
+@misc{redis,
+  author       = {{Redis Ltd.}},
+  title        = {Redis: An In-Memory Data Store},
+  howpublished = {\url{https://redis.io/}},
+  year         = {2024},
+}
+
+@misc{nginx,
+  author       = {{F5/NGINX}},
+  title        = {nginx: HTTP and Reverse Proxy Server},
+  howpublished = {\url{https://nginx.org/}},
+  year         = {2024},
+}
+
+@misc{memcached,
+  author       = {{memcached}},
+  title        = {memcached: A Distributed Memory Object Caching System},
+  howpublished = {\url{https://memcached.org/}},
+  year         = {2024},
+}
+
+@misc{nodejs,
+  author       = {{OpenJS Foundation}},
+  title        = {{Node.js}: A {JavaScript} Runtime Built on {V8}},
+  howpublished = {\url{https://nodejs.org/}},
+  year         = {2024},
+}
+
+@misc{cpython,
+  author       = {{Python Software Foundation}},
+  title        = {{asyncio}: Asynchronous {I/O} in {CPython}},
+  howpublished = {\url{https://docs.python.org/3/library/asyncio.html}},
+  year         = {2024},
+}
+
+@misc{apache,
+  author       = {{Apache Software Foundation}},
+  title        = {Apache {HTTP} Server},
+  howpublished = {\url{https://httpd.apache.org/}},
+  year         = {2024},
+}
+
+@misc{postgresql,
+  author       = {{PostgreSQL Global Development Group}},
+  title        = {{PostgreSQL}: The World's Most Advanced Open Source Relational Database},
+  howpublished = {\url{https://www.postgresql.org/}},
+  year         = {2024},
+}
+
+@misc{mariadb,
+  author       = {{MariaDB Foundation}},
+  title        = {{MariaDB} Server: The Open Source Relational Database},
+  howpublished = {\url{https://mariadb.org/}},
+  year         = {2024},
+}
+
+@misc{haproxy,
+  author       = {{HAProxy Technologies}},
+  title        = {{HAProxy}: The Reliable, High-Performance {TCP/HTTP} Load Balancer},
+  howpublished = {\url{https://www.haproxy.org/}},
+  year         = {2024},
+}

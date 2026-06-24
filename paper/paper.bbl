@@ -1,0 +1,296 @@
+\begin{thebibliography}{46}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Amza et~al.(1996)Amza, Cox, Dwarkadas, Keleher, Lu, Rajamony, Yu, and
+  Zwaenepoel]{treadmarks}
+Cristiana Amza, Alan~L. Cox, Sandhya Dwarkadas, Pete Keleher, Honghui Lu,
+  Ramakrishnan Rajamony, Weimin Yu, and Willy Zwaenepoel.
+\newblock {TreadMarks}: Shared memory computing on networks of workstations.
+\newblock \emph{IEEE Computer}, 29\penalty0 (2):\penalty0 18--28, 1996.
+
+\bibitem[{Apache Software Foundation}(2024)]{apache}
+{Apache Software Foundation}.
+\newblock Apache {HTTP} server.
+\newblock \url{https://httpd.apache.org/}, 2024.
+
+\bibitem[Axboe(2019)]{iouring}
+Jens Axboe.
+\newblock Efficient {IO} with {io\_uring}.
+\newblock \url{https://kernel.dk/io_uring.pdf}, 2019.
+
+\bibitem[Barroso et~al.(2017)Barroso, Marty, Patterson, and
+  Ranganathan]{microsecond}
+Luiz Barroso, Mike Marty, David Patterson, and Parthasarathy Ranganathan.
+\newblock Attack of the killer microseconds.
+\newblock \emph{Communications of the ACM}, 60\penalty0 (4):\penalty0 48--54,
+  2017.
+
+\bibitem[Belay et~al.(2014)Belay, Prekas, Klimovic, Grossman, Kozyrakis, and
+  Bugnion]{ix}
+Adam Belay, George Prekas, Ana Klimovic, Samuel Grossman, Christos Kozyrakis,
+  and Edouard Bugnion.
+\newblock {IX}: A protected dataplane operating system for high throughput and
+  low latency.
+\newblock In \emph{Proceedings of the 11th USENIX Symposium on Operating
+  Systems Design and Implementation (OSDI)}, pages 49--65, 2014.
+
+\bibitem[Cox(2005)]{libtask}
+Russ Cox.
+\newblock libtask: A coroutine library for {C} and {Unix}.
+\newblock \url{https://swtch.com/libtask/}, 2005.
+
+\bibitem[Crankshaw et~al.(2017)Crankshaw, Wang, Zhou, Franklin, Gonzalez, and
+  Stoica]{clipper}
+Daniel Crankshaw, Xin Wang, Giulio Zhou, Michael~J. Franklin, Joseph~E.
+  Gonzalez, and Ion Stoica.
+\newblock Clipper: A low-latency online prediction serving system.
+\newblock In \emph{Proceedings of the 14th USENIX Symposium on Networked
+  Systems Design and Implementation (NSDI)}, pages 613--627, 2017.
+
+\bibitem[{DPDK Project}(2024)]{dpdk}
+{DPDK Project}.
+\newblock {DPDK}: Data plane development kit.
+\newblock \url{https://www.dpdk.org/}, 2024.
+
+\bibitem[Drepper(2011)]{drepper}
+Ulrich Drepper.
+\newblock How to write shared libraries.
+\newblock \url{https://www.akkadia.org/drepper/dsohowto.pdf}, 2011.
+
+\bibitem[{Envoy Project}(2024)]{extproc}
+{Envoy Project}.
+\newblock External processing filter ({ext\_proc}).
+\newblock
+  \url{https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/ext_proc_filter},
+  2024.
+
+\bibitem[{F5/NGINX}(2024)]{nginx}
+{F5/NGINX}.
+\newblock nginx: Http and reverse proxy server.
+\newblock \url{https://nginx.org/}, 2024.
+
+\bibitem[Franke et~al.(2002)Franke, Russell, and Kirkwood]{futexes}
+Hubertus Franke, Rusty Russell, and Matthew Kirkwood.
+\newblock Fuss, futexes and furwocks: Fast userlevel locking in {Linux}.
+\newblock In \emph{Proceedings of the Ottawa Linux Symposium (OLS)}, pages
+  479--495, 2002.
+
+\bibitem[Fried et~al.(2020)Fried, Ruan, Ousterhout, and Belay]{caladan}
+Joshua Fried, Zhenyuan Ruan, Amy Ousterhout, and Adam Belay.
+\newblock Caladan: Mitigating interference at microsecond timescales.
+\newblock In \emph{Proceedings of the 14th USENIX Symposium on Operating
+  Systems Design and Implementation (OSDI)}, pages 281--297, 2020.
+
+\bibitem[{HAProxy Technologies}(2024{\natexlab{a}})]{haproxy}
+{HAProxy Technologies}.
+\newblock {HAProxy}: The reliable, high-performance {TCP/HTTP} load balancer.
+\newblock \url{https://www.haproxy.org/}, 2024{\natexlab{a}}.
+
+\bibitem[{HAProxy Technologies}(2024{\natexlab{b}})]{spoe}
+{HAProxy Technologies}.
+\newblock Stream processing offload engine ({SPOE}) and protocol ({SPOP}).
+\newblock \url{https://www.haproxy.com/documentation/}, 2024{\natexlab{b}}.
+
+\bibitem[Herlihy and Moss(1993)]{htm}
+Maurice Herlihy and J.~Eliot~B. Moss.
+\newblock Transactional memory: Architectural support for lock-free data
+  structures.
+\newblock In \emph{Proceedings of the 20th Annual International Symposium on
+  Computer Architecture (ISCA)}, pages 289--300, 1993.
+
+\bibitem[{Intel Corporation}(2024)]{qat}
+{Intel Corporation}.
+\newblock Intel quickassist technology ({Intel QAT}).
+\newblock
+  \url{https://www.intel.com/content/www/us/en/architecture-and-technology/intel-quick-assist-technology-overview.html},
+  2024.
+
+\bibitem[Jang et~al.(2011)Jang, Han, Han, Moon, and Park]{sslshader}
+Keon Jang, Sangjin Han, Seungyeop Han, Sue Moon, and KyoungSoo Park.
+\newblock {SSLShader}: Cheap {SSL} acceleration with commodity processors.
+\newblock In \emph{Proceedings of the 8th USENIX Symposium on Networked Systems
+  Design and Implementation (NSDI)}, 2011.
+
+\bibitem[Kim et~al.(2014)Kim, Huh, Zhang, Hu, Wated, Witchel, and
+  Silberstein]{gpunet}
+Sangman Kim, Seonggu Huh, Xinya Zhang, Yige Hu, Amir Wated, Emmett Witchel, and
+  Mark Silberstein.
+\newblock {GPUnet}: Networking abstractions for {GPU} programs.
+\newblock In \emph{Proceedings of the 11th USENIX Symposium on Operating
+  Systems Design and Implementation (OSDI)}, pages 201--216, 2014.
+
+\bibitem[Li et~al.(2016)Li, Tan, Luo, Peng, Luo, Xu, Xiong, Cheng, and
+  Chen]{clicknp}
+Bojie Li, Kun Tan, Layong~(Larry) Luo, Yanqing Peng, Renqian Luo, Ningyi Xu,
+  Yongqiang Xiong, Peng Cheng, and Enhong Chen.
+\newblock {ClickNP}: Highly flexible and high performance network processing
+  with reconfigurable hardware.
+\newblock In \emph{Proceedings of the 2016 ACM SIGCOMM Conference}, pages
+  1--14, 2016.
+
+\bibitem[Li et~al.(2017)Li, Ruan, Xiao, Lu, Xiong, Putnam, Chen, and
+  Zhang]{kvdirect}
+Bojie Li, Zhenyuan Ruan, Wencong Xiao, Yuanwei Lu, Yongqiang Xiong, Andrew
+  Putnam, Enhong Chen, and Lintao Zhang.
+\newblock {KV-Direct}: High-performance in-memory key-value store with
+  programmable {NIC}.
+\newblock In \emph{Proceedings of the 26th Symposium on Operating Systems
+  Principles (SOSP)}, pages 137--152, 2017.
+
+\bibitem[Li et~al.(2023)Li, Xiang, Wang, Ruan, Zhou, and Tan]{fastwake}
+Bojie Li, Zihao Xiang, Xiaoliang Wang, Han Ruan, Jingbin Zhou, and Kun Tan.
+\newblock {FastWake}: Revisiting host network stack for interrupt-mode {RDMA}.
+\newblock In \emph{Proceedings of the 7th Asia-Pacific Workshop on Networking
+  (APNet)}, pages 1--7. ACM, 2023.
+\newblock \doi{10.1145/3600061.3600063}.
+
+\bibitem[{libuv contributors}(2024)]{libuv}
+{libuv contributors}.
+\newblock libuv: Cross-platform asynchronous {I/O}.
+\newblock \url{https://libuv.org/}, 2024.
+
+\bibitem[Liu et~al.(2018)Liu, Cui, Schuh, Krishnamurthy, Peter, and
+  Gupta]{ipipe}
+Ming Liu, Tianyi Cui, Henry Schuh, Arvind Krishnamurthy, Simon Peter, and Karan
+  Gupta.
+\newblock Offloading distributed applications onto {SmartNICs} using {iPipe}.
+\newblock In \emph{Proceedings of the 2018 ACM SIGCOMM Conference}, pages
+  318--333, 2018.
+
+\bibitem[{MariaDB Foundation}(2024)]{mariadb}
+{MariaDB Foundation}.
+\newblock {MariaDB} server: The open source relational database.
+\newblock \url{https://mariadb.org/}, 2024.
+
+\bibitem[{memcached}(2024)]{memcached}
+{memcached}.
+\newblock memcached: A distributed memory object caching system.
+\newblock \url{https://memcached.org/}, 2024.
+
+\bibitem[{National Institute of Standards and Technology}(2024)]{mlkem}
+{National Institute of Standards and Technology}.
+\newblock Module-lattice-based key-encapsulation mechanism standard.
+\newblock Technical Report FIPS 203, NIST, 2024.
+
+\bibitem[{NVIDIA Corporation}(2024)]{cudastreams}
+{NVIDIA Corporation}.
+\newblock {CUDA} {C++} programming guide: Asynchronous concurrent execution.
+\newblock \url{https://docs.nvidia.com/cuda/cuda-c-programming-guide/}, 2024.
+
+\bibitem[{OpenJDK}(2023)]{loom}
+{OpenJDK}.
+\newblock {JEP} 444: Virtual threads (project {Loom}).
+\newblock \url{https://openjdk.org/jeps/444}, 2023.
+
+\bibitem[{OpenJS Foundation}(2024)]{nodejs}
+{OpenJS Foundation}.
+\newblock {Node.js}: A {JavaScript} runtime built on {V8}.
+\newblock \url{https://nodejs.org/}, 2024.
+
+\bibitem[{OpenSSL Project}(2024)]{openssl}
+{OpenSSL Project}.
+\newblock {OpenSSL}: Cryptography and {SSL/TLS} toolkit.
+\newblock \url{https://www.openssl.org/}, 2024.
+
+\bibitem[Ousterhout et~al.(2019)Ousterhout, Fried, Behrens, Belay, and
+  Balakrishnan]{shenango}
+Amy Ousterhout, Joshua Fried, Jonathan Behrens, Adam Belay, and Hari
+  Balakrishnan.
+\newblock Shenango: Achieving high {CPU} efficiency for latency-sensitive
+  datacenter workloads.
+\newblock In \emph{Proceedings of the 16th USENIX Symposium on Networked
+  Systems Design and Implementation (NSDI)}, pages 361--378, 2019.
+
+\bibitem[Pai et~al.(1999)Pai, Druschel, and Zwaenepoel]{flash}
+Vivek~S. Pai, Peter Druschel, and Willy Zwaenepoel.
+\newblock Flash: An efficient and portable web server.
+\newblock In \emph{Proceedings of the USENIX Annual Technical Conference
+  (ATC)}, 1999.
+
+\bibitem[{PostgreSQL Global Development Group}(2024)]{postgresql}
+{PostgreSQL Global Development Group}.
+\newblock {PostgreSQL}: The world's most advanced open source relational
+  database.
+\newblock \url{https://www.postgresql.org/}, 2024.
+
+\bibitem[Prekas et~al.(2017)Prekas, Kogias, and Bugnion]{zygos}
+George Prekas, Marios Kogias, and Edouard Bugnion.
+\newblock {ZygOS}: Achieving low tail latency for microsecond-scale networked
+  tasks.
+\newblock In \emph{Proceedings of the 26th Symposium on Operating Systems
+  Principles (SOSP)}, pages 325--341, 2017.
+
+\bibitem[Provos and Mathewson(2024)]{libevent}
+Niels Provos and Nick Mathewson.
+\newblock libevent: An event notification library.
+\newblock \url{https://libevent.org/}, 2024.
+
+\bibitem[{Python Software Foundation}(2024)]{cpython}
+{Python Software Foundation}.
+\newblock {asyncio}: Asynchronous {I/O} in {CPython}.
+\newblock \url{https://docs.python.org/3/library/asyncio.html}, 2024.
+
+\bibitem[Qin et~al.(2018)Qin, Li, Speiser, Kraft, and Ousterhout]{arachne}
+Henry Qin, Qian Li, Jacqueline Speiser, Peter Kraft, and John Ousterhout.
+\newblock Arachne: Core-aware thread management.
+\newblock In \emph{Proceedings of the 13th USENIX Symposium on Operating
+  Systems Design and Implementation (OSDI)}, pages 145--160, 2018.
+
+\bibitem[{Redis Ltd.}(2024)]{redis}
+{Redis Ltd.}
+\newblock Redis: An in-memory data store.
+\newblock \url{https://redis.io/}, 2024.
+
+\bibitem[{RedisAI}(2022)]{redisai}
+{RedisAI}.
+\newblock {RedisAI}: A redis module for serving tensors and executing deep
+  learning models.
+\newblock \url{https://oss.redis.com/redisai/}, 2022.
+
+\bibitem[{ScyllaDB}(2024)]{seastar}
+{ScyllaDB}.
+\newblock Seastar: A high-performance shared-nothing asynchronous {C++}
+  framework.
+\newblock In \emph{\url{https://seastar.io/}}, 2024.
+
+\bibitem[{State Threads Library}(2009)]{statethreads}
+{State Threads Library}.
+\newblock State threads library for internet applications.
+\newblock \url{http://state-threads.sourceforge.net/}, 2009.
+
+\bibitem[{The Go Authors}(2024)]{golang}
+{The Go Authors}.
+\newblock The {Go} programming language: Goroutines and the scheduler.
+\newblock \url{https://go.dev/}, 2024.
+
+\bibitem[von Behren et~al.(2003)von Behren, Condit, Zhou, Necula, and
+  Brewer]{capriccio}
+Rob von Behren, Jeremy Condit, Feng Zhou, George~C. Necula, and Eric Brewer.
+\newblock Capriccio: Scalable threads for internet services.
+\newblock In \emph{Proceedings of the 19th ACM Symposium on Operating Systems
+  Principles (SOSP)}, pages 268--281, 2003.
+
+\bibitem[Welsh et~al.(2001)Welsh, Culler, and Brewer]{seda}
+Matt Welsh, David Culler, and Eric Brewer.
+\newblock {SEDA}: An architecture for well-conditioned, scalable internet
+  services.
+\newblock In \emph{Proceedings of the 18th ACM Symposium on Operating Systems
+  Principles (SOSP)}, pages 230--243, 2001.
+
+\bibitem[Zhang et~al.(2021)Zhang, Raybuck, Patel, Olynyk, Nelson, Leija,
+  Martinez, Liu, Simpson, Jayakar, Penna, Demoulin, Choudhury, and
+  Badam]{demikernel}
+Irene Zhang, Amanda Raybuck, Pratyush Patel, Kirk Olynyk, Jacob Nelson, Omar
+  S.~Navarro Leija, Ashlie Martinez, Jing Liu, Anna~Kornfeld Simpson, Sujay
+  Jayakar, Pedro~Henrique Penna, Max Demoulin, Piali Choudhury, and Anirudh
+  Badam.
+\newblock The demikernel datapath {OS} architecture for microsecond-scale
+  datacenter systems.
+\newblock In \emph{Proceedings of the 28th ACM Symposium on Operating Systems
+  Principles (SOSP)}, pages 195--211, 2021.
+
+\end{thebibliography}

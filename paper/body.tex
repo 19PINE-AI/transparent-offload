@@ -1,0 +1,692 @@
+% =====================================================================
+%  body.tex  —  Fine-Grained Computation Offload for Event-Driven Applications
+% =====================================================================
+
+\section{Introduction}
+\label{sec:intro}
+
+Hardware accelerators are now a standard part of online serving. GPUs, TPUs, and FPGAs accelerate
+machine-learning inference, image processing, encryption, and compression, and an increasing share
+of ``acceleration'' is in fact a \emph{remote} call---to a hardware security module that signs a
+token, to a post-quantum key-encapsulation service~\cite{mlkem}, to a co-located inference
+server~\cite{clipper}. The shape of
+the application is remarkably uniform across these cases. A server receives a request from the
+network, does some pre-processing, invokes a computationally intensive routine, does some
+post-processing, and sends a response. When the intensive routine runs on an accelerator, it is
+replaced by an \emph{offload}: a submission to the device and a wait for its completion. This raises
+a deceptively simple question that this paper is about: \emph{what should the CPU do while it waits
+for the accelerator?}
+
+The textbook answers are unsatisfying precisely in the regime that matters
+(Figure~\ref{fig:pipeline}). The first is to \emph{relinquish the CPU}: after submitting the
+offload, block, and let the operating system run another thread. But a context switch on Linux costs
+several microseconds, and a fine-grained offload---AES on a few kilobytes, a small inference, an HSM
+round-trip---also takes from a few to tens of microseconds. This is the ``killer
+microsecond'' regime~\cite{microsecond}: too long to spin away, too short for the operating system to
+schedule around profitably. The switch overhead is then comparable
+to the work it overlaps: it wastes CPU and \emph{adds} a thread-wakeup delay to the request's tail
+latency. The second answer is to \emph{busy-wait} on the completion flag, which hides the wakeup
+delay but burns a core doing nothing. The third, and the only principled one, is to \emph{do other
+useful work} on the same CPU while the offload is in flight---to \emph{overlap} the offload with the
+processing of other requests. This is what high-performance systems already do by hand. The
+difficulty is that overlapping requires \emph{concurrency} inside the application at the offload
+point, and existing servers express concurrency in many different ways. The central question of this
+paper is therefore not \emph{whether} to overlap, but \emph{how much an off-the-shelf server must be
+changed to do so}.
+
+We answer this empirically, across the landscape of real servers, and the answer is a
+\textbf{spectrum} bounded by two extremes (Figure~\ref{fig:spectrum}). At one extreme, overlap can be
+injected with \emph{no source modification at all}. We build a user-space M:N fiber runtime, loaded
+by \texttt{LD\_PRELOAD}, that interposes the standard threading and I/O symbols: it turns each
+connection-handling thread into a lightweight fiber, yields the fiber at every blocking point, and
+runs other fibers on the same core in the meantime. On a synchronous thread-per-connection handler
+it delivers large speedups---$17.3\times$ over a synchronous baseline for GPU AES---with the
+application binary unchanged. But transparency reaches only so far, and mapping exactly how far is
+itself a contribution. Running the runtime under stock binaries surfaces a sequence of obstacles that
+any threading-interposing tool must solve (most notably a glibc condition-variable symbol-versioning
+hazard that silently corrupts some binaries), and, beyond those, \emph{three architectural walls}
+that no engineering removes: storage engines that synchronize with raw \texttt{futex} system calls
+\emph{below} the libc interface, managed runtimes that store thread identity in a native
+thread-local slot the loader cannot virtualize, and workloads whose per-request CPU already exceeds
+the offload so that there is no idle time to reclaim. Crucially, the runtime engages only on
+\emph{thread-per-connection} servers: an event-driven server has a single event loop and no
+per-connection thread to fiberize, so the very class of applications with the \emph{most} to gain
+from overlap---one synchronous offload stalls the \emph{entire} server---is the class transparency
+cannot help.
+
+At the other extreme, overlap can be injected with \emph{a few lines}. The recipe is uniform:
+replace the synchronous offload at its call site with an asynchronous one that hands the work to the
+application's \emph{own} concurrency mechanism---a module's background thread pool, an event loop's
+deferred-response primitive, a language runtime's tasks---and answer the request on completion. The
+edit is small because every modern server already contains machinery to suspend and resume work; one
+only has to route the offload through it. We instantiate this recipe on \textbf{ten} off-the-shelf
+servers spanning every concurrency model---Redis, nginx, memcached, Node.js, Python/asyncio, Apache,
+Go, PostgreSQL, MariaDB, and HAProxy---and in each case the change is \textbf{18 to 112 lines added,
+and zero or one existing line modified}. The resulting speedups range from $3.8\times$ on a real GPU
+to $212\times$ with a high-latency parallel offload, with no failed requests.
+
+Behind these numbers is a simple predictive model, and extracting it is the paper's main
+intellectual contribution. The speedup \emph{and} the code cost of overlapping an offload are
+determined by two properties of the server: its \emph{concurrency model} and the \emph{weight of the
+offload relative to the per-request CPU work}. The concurrency model places a server in one of a few
+regimes, and the regime predicts both how much overlap a minimal edit buys and how many lines it
+takes (which is dominated by whether the server already exposes an asynchronous, deferred-response
+primitive). The offload weight predicts whether overlap helps at all: when per-request CPU dominates,
+even a perfectly overlapped offload changes little. This model explains the full range of our
+measurements, including the cases where overlap does \emph{not} help, and it tells an operator in
+advance which servers to touch and what to expect.
+
+Overlap introduces one correctness hazard, and we address it. When the post-processing after an
+offload mutates shared state---a global counter, a cache, a key in a key-value store---then
+overlapping two requests can reorder their read-modify-write sequences and corrupt that state. We
+provide a transparent conflict detector, based on page protection and version snapshots, that flags
+exactly these conflicts and serializes only the conflicting work; it applies at both ends of the
+spectrum and needs no application annotation.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{figs/fig_pipeline.pdf}
+  \caption{The problem. A serving request is \emph{receive $\to$ pre-process $\to$ offload $\to$
+    post-process $\to$ send}. Top: with a synchronous offload, the CPU stalls while the accelerator
+    works. For fine-grained offloads (microseconds to a few milliseconds), a context switch to fill
+    the gap costs as much as the gap itself, and busy-waiting wastes the core. Bottom: \emph{overlap}
+    fills the gap with other requests' processing. The question of this paper is how much an existing
+    server must change to do this.}
+  \label{fig:pipeline}
+\end{figure}
+
+In summary, this paper makes the following contributions:
+\begin{itemize}[leftmargin=1.4em,itemsep=2pt,topsep=2pt]
+  \item \textbf{A predictive model} of fine-grained offload overlap in existing servers: speedup and
+    code cost as a function of the server's concurrency model and the offload's weight relative to
+    per-request work, validated across ten real servers (\S\ref{sec:taxonomy}).
+  \item \textbf{The transparent boundary, characterized}: a zero-modification M:N fiber runtime, the
+    obstacle taxonomy it must overcome (including a reusable glibc condition-variable versioning
+    bug), three architectural walls where transparency provably stops, and a classifier that predicts
+    whether a binary is fiberizable (\S\ref{sec:transparent}).
+  \item \textbf{A minimal-edit recipe and a cross-landscape study}: one offload-overlap pattern on
+    ten off-the-shelf servers with 18--112 lines added and 0--1 lines modified, achieving
+    $3.8\times$--$212\times$ on real and modeled accelerators (\S\ref{sec:minimal}, \S\ref{sec:eval}).
+  \item \textbf{A transparent conflict detector} that keeps overlapped offload correct when it
+    mutates shared state, with no application changes (\S\ref{sec:correctness}).
+\end{itemize}
+
+
+% =====================================================================
+\section{Background and Motivation}
+\label{sec:background}
+
+\paragraph{Accelerators and the fine-grained regime.}
+An accelerator turns a CPU-bound routine into a device operation: the CPU prepares an input buffer,
+submits it (a kernel launch, a DMA, or a network send), and later collects the result. The
+\emph{latency} of this round-trip spans a wide range. Bulk AES or a small CUDA kernel on a few
+kilobytes completes in tens of microseconds; a compression card or a small on-GPU inference in
+tens to hundreds of microseconds; a hardware security module signature, a post-quantum
+key-encapsulation, or a remote inference call in milliseconds. What unites them (Figure~\ref{fig:landscape}) is that they are
+\emph{fine-grained} relative to operating-system scheduling: the offload finishes on a timescale
+comparable to, or only modestly larger than, a context switch. In this regime the classic ways of
+waiting are wasteful, as Figure~\ref{fig:pipeline} illustrates---blocking pays a switch and a wakeup
+that rival the offload, and busy-waiting pays a whole core. Overlapping the offload with other work
+is the only approach that neither wastes the CPU nor inflates latency, and it is the approach this
+paper makes easy to adopt.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{figs/fig_landscape.pdf}
+  \caption{The fine-grained regime. Accelerator offloads span microseconds to milliseconds. In the
+    shaded band, the offload latency is comparable to an OS context switch, so blocking pays a switch
+    and a wakeup that rival the work itself, and busy-waiting wastes a core. This is exactly where
+    overlapping the offload with other requests is the right answer.}
+  \label{fig:landscape}
+\end{figure}
+
+\paragraph{How servers express concurrency.}
+``Other work to overlap with'' means \emph{concurrent requests}, and a server's ability to overlap an
+offload is determined by how it runs concurrent requests in the first place. We find it useful to
+group servers into a few models, which recur throughout the paper. A \emph{single-event-loop} server
+(e.g., Redis, Node.js, a Python \texttt{asyncio} service) multiplexes all connections on one thread
+that loops over ready events; an \emph{event-loop-with-pool} server (nginx, memcached) runs a few
+such loops plus a worker pool for blocking work; a \emph{thread- or goroutine-pool} server (Apache,
+Go) dispatches each request to a pooled worker or a runtime-scheduled task; and a
+\emph{process- or thread-per-connection} server (PostgreSQL, MariaDB) gives each connection its own
+backend. These models differ sharply in what a synchronous offload \emph{costs} and in how overlap
+must be injected---differences this paper turns into a predictive model (\S\ref{sec:taxonomy}).
+
+\paragraph{The motivating catastrophe.}
+The starkest case is a single event loop. Because one thread handles every connection, a synchronous
+offload on that thread blocks \emph{all} connections for its full duration; the server's throughput
+collapses to roughly one request per offload latency, no matter how many clients are waiting. The
+hardware is almost entirely idle, yet the server is saturated---a pathology of the \emph{structure},
+not of capacity. A few lines that move the offload off the loop restore full concurrency and recover
+more than an order of magnitude (\S\ref{sec:eval}). The event-driven servers that dominate modern
+serving are thus the ones with the most to gain from overlap---and, as we show next, the ones a
+transparent runtime cannot help.
+
+
+% =====================================================================
+\section{Transparent Overlap: The Zero-Edit Extreme}
+\label{sec:transparent}
+
+We begin at the zero-modification end of the spectrum. The goal is the most convenient form of
+overlap imaginable: take an \emph{unmodified} server binary and make it overlap its offloads, with no
+recompilation and no source access. The result is an existence proof that the mechanism works, and---
+more importantly for the rest of the paper---a precise map of how far transparency can reach.
+
+\subsection{An \texttt{LD\_PRELOAD} M:N fiber runtime}
+
+Our runtime (Figure~\ref{fig:runtime}) is a shared library loaded ahead of the application by
+\texttt{LD\_PRELOAD}. It interposes the standard threading and I/O symbols. When the application
+creates a connection-handling thread, the runtime instead spawns a \emph{fiber}---a user-level thread
+with its own small stack and a hand-written, register-only context switch of tens of nanoseconds,
+some twenty times cheaper than a kernel switch~\cite{fastwake}. All fibers run on a single
+\emph{carrier} OS thread.
+When a fiber would block---on a socket read or write, or on the offload---the runtime saves its
+context and switches to another runnable fiber; a scheduler on the carrier waits for I/O readiness
+and offload completions and resumes the corresponding fiber. The application's handler keeps its
+plain, synchronous shape (read a request, call the offload, write a reply); it never learns that its
+``thread'' is a fiber or that its offload was overlapped with its neighbors'. Per-fiber state that
+the C library treats as thread-local, such as \texttt{errno} and the OpenSSL error queue, is saved
+and restored at every switch so that fibers do not see each other's transient state.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.92\linewidth]{figs/fig_runtime.pdf}
+  \caption{The transparent runtime. An \texttt{LD\_PRELOAD} library turns each connection thread into
+    a fiber on one carrier core; a fiber yields at its offload (and at socket I/O), and the scheduler
+    runs another fiber until the device completes. The application binary is unchanged. On a
+    synchronous thread-per-connection handler with a real GPU this overlaps 64 connections' offloads
+    and delivers $17.3\times$ over a blocking baseline.}
+  \label{fig:runtime}
+\end{figure}
+
+On a synchronous thread-per-connection handler this works well. With a real GPU performing AES, the
+runtime overlaps 64 connections' offloads on one carrier core and reaches $17.3\times$ the throughput
+of the same binary blocking on each offload, with results verified bit-for-bit; a DNN-inference
+server shows $11.8\times$. These confirm the mechanism. The rest of this section is about its limits,
+which turn out to be the more useful contribution.
+
+\subsection{What it takes to run real binaries}
+
+Interposing the threading layer of a stock binary is harder than it sounds, and the obstacles are
+worth recording because any such tool faces them. The sharpest is a \emph{symbol-versioning}
+hazard~\cite{drepper}. The glibc condition-variable functions carry two incompatible ABIs under the
+same names
+(\texttt{GLIBC\_2.2.5} and \texttt{GLIBC\_2.3.2}); a naive interposer that defines an
+\emph{unversioned} \texttt{pthread\_cond\_signal} silently breaks the dynamic linker's
+version-matched relocation and corrupts the application. MariaDB crashes at startup with a wild
+pointer; the fix is to export the interposed symbols at their exact version and resolve the real ones
+with \texttt{dlvsym}. The same defect is latent in any threading-interposing tool, and we found it
+crashes one of five tested server binaries while silently sparing the rest
+(Figure~\ref{fig:condsweep})---a reusable practitioner lesson. Other obstacles, each resolved once:
+the server's I/O may use \texttt{recv}/\texttt{send}/
+\texttt{poll} rather than \texttt{read}/\texttt{write}; \texttt{pthread\_self} must return the real
+OS thread identity so that the C library's stack-bounds logic works; a daemon's \texttt{fork} drops
+the carrier thread, which must be re-established; and pinning the carrier to a real-time priority can
+invert priorities against a lock holder.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.9\linewidth]{figs/fig_condsweep.pdf}
+  \caption{A reusable interposition hazard. The glibc condition-variable functions carry two
+    incompatible ABIs under one name; a naive unversioned interposer breaks the version-matched
+    relocation and corrupts \emph{some} binaries (MariaDB crashes at startup) while silently sparing
+    others. Version-matching the interposed symbols fixes all of them. Any threading-interposing tool
+    must do this.}
+  \label{fig:condsweep}
+\end{figure}
+
+\subsection{Three walls where transparency stops}
+
+Beyond engineering obstacles lie three \emph{walls} that no amount of interposition removes
+(Figure~\ref{fig:walls}). Each is a place where the application's behavior escapes the layer a
+preloaded library can intercept.
+
+\emph{Wall 1---synchronization below libc.} A storage engine such as InnoDB does its internal
+locking with the \texttt{futex} system call~\cite{futexes} issued \emph{directly}, bypassing the
+\texttt{pthread} layer entirely. A userspace runtime interposes library \emph{symbols}, not system calls; a fiber that
+blocks in a raw \texttt{futex} therefore stalls the entire carrier, and under contention the whole
+server deadlocks. We confirmed this with a live backtrace of the frozen carrier inside InnoDB's
+synchronization code.
+
+\emph{Wall 2---thread identity in native TLS.} A managed runtime such as the JVM stores ``the current
+thread'' in a native thread-local slot read directly from a CPU register, not through any library
+call. Fibers that share one carrier OS thread cannot be given distinct values of that slot by symbol
+interposition, so after a fiber switch the runtime reads the \emph{wrong} thread object and
+segfaults. We observe exactly this---a crash dereferencing a stale \texttt{Thread*} the moment two
+fiberized JVM requests interleave---and the same mechanism applies to Go and .NET.
+
+\emph{Wall 3---no idle CPU to reclaim.} Overlap only helps if the CPU is idle during the offload. A
+TLS terminator that is already thread-per-connection and spends real CPU on per-request crypto has no
+such idle time: the OS already overlaps its offloads across threads, while the single carrier
+serializes the real crypto and pays an interposition tax on every yield. The result is $2$--$3\times$
+\emph{slower} than native on the same core.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{figs/fig_walls.pdf}
+  \caption{The three walls. Transparent interposition virtualizes the libc symbol layer
+    (read/write, the \texttt{pthread} primitives, \texttt{errno}). It cannot reach three things:
+    synchronization issued as a \emph{raw} system call below libc (InnoDB's \texttt{futex}); thread
+    identity held in a native TLS register (the JVM, Go); and workloads where per-request CPU already
+    exceeds the offload, leaving no idle time. These bound where zero-edit overlap is possible.}
+  \label{fig:walls}
+\end{figure}
+
+\subsection{A classifier for fiberizability}
+
+The walls are not arbitrary; they are predictable from a binary's behavior. We profile the
+\emph{per-request blocking syscalls} a server makes under load. Event-driven servers do their I/O
+with \texttt{epoll} and \texttt{read} and have no per-connection thread to fiberize: the runtime
+loads safely but never engages. Thread-per-connection servers whose blocking is all at the libc layer
+have \emph{near-zero} per-request \texttt{futex} traffic and are fiberizable. Engines that
+synchronize below libc have \texttt{futex} traffic that dominates their profile and use kernel-bypass I/O such as \texttt{io\_uring}~\cite{iouring}---the wall. Figure~\ref{fig:classifier} makes this concrete: InnoDB's
+per-request \texttt{futex} density is roughly two orders of magnitude above a fiberizable server's, a
+cheap static-plus-dynamic check that tells an operator in advance whether a binary can be fiberized.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.86\linewidth]{figs/fig_classifier.pdf}
+  \caption{Predicting fiberizability. Per-request \texttt{futex} calls separate the near-zero
+    libc-level servers (whose blocking the runtime can interpose) from engines that synchronize below
+    libc (InnoDB, $\sim$$13{,}000$, plus \texttt{io\_uring})---the wall of Figure~\ref{fig:walls}. The
+    same profile flags event-driven servers as ``loads safely, no overlap.''}
+  \label{fig:classifier}
+\end{figure}
+
+The verdict frames the rest of the paper. Transparency serves a narrow niche---thread-per-connection
+servers with light per-request CPU and a libc-level offload---and, by construction, it cannot help
+the event-driven servers that have the most to gain. For everyone else, a few lines suffice.
+
+
+% =====================================================================
+\section{Minimal-Edit Overlap}
+\label{sec:minimal}
+
+If a server cannot be fiberized from the outside, it can almost always be overlapped from a small
+edit inside. The reason is that every modern server already contains the machinery to \emph{suspend}
+a request and \emph{resume} it later---that machinery is what lets it serve many connections at
+once. To overlap an offload, one only has to route it through that machinery instead of blocking on
+it. The recipe is uniform across servers:
+
+\begin{enumerate}[leftmargin=1.5em,itemsep=1pt,topsep=2pt]
+  \item at the offload call site, \emph{submit} the work to a background executor instead of waiting;
+  \item \emph{suspend} the current request using the server's own deferred-response primitive;
+  \item \emph{resume} it and send the reply when the offload completes.
+\end{enumerate}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{figs/fig_recipe.pdf}
+  \caption{The minimal-edit recipe. At the offload call site, submit the work to a background
+    executor, suspend the request with the server's own deferred-response primitive, and resume it
+    to reply on completion; meanwhile the server's loop serves other requests. The edit is small
+    because the suspend/resume machinery already exists---one only reroutes the offload through it.}
+  \label{fig:recipe}
+\end{figure}
+
+We distinguish two quantities: \emph{lines added} (the new integration code) and \emph{existing lines
+modified} (edits to code already in the server). The second is the invasive, maintenance-costly part;
+zero is ideal and is achievable wherever the server exposes a plugin or extension interface. We
+instantiate the recipe on ten servers, one per concurrency model, and in every case the change is
+\textbf{18--112 lines added and 0--1 lines modified} (Figure~\ref{fig:spectrum}).
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{figs/fig_spectrum.pdf}
+  \caption{The spectrum (the paper in one plot). Each point is an off-the-shelf server; the
+    $x$-axis is the lines of integration code, the $y$-axis the speedup from overlapping the offload.
+    Ten production servers fall between roughly twenty and a hundred lines, with speedups from
+    $3.8\times$ to $212\times$; the transparent runtime sits at zero lines but reaches only its niche
+    (and walls on third-party binaries). For the thread/goroutine-pool servers (Apache, Go) the
+    $y$-value is concurrency scaling---the pool overlapping offloads across requests---rather than a
+    single-thread sync-vs-async ratio. Color encodes the concurrency model, which---together with
+    the offload weight---predicts both axes (\S\ref{sec:taxonomy}).}
+  \label{fig:spectrum}
+\end{figure}
+
+The integration point follows the concurrency model. Servers with a \emph{plugin or extension API}
+take the recipe with zero core edits: a Redis~\cite{redis} module blocks the client and runs the
+offload on a worker pool; an nginx~\cite{nginx} add-on posts the offload to nginx's thread pool and
+completes the request from the callback; an Apache~\cite{apache} module is a content handler whose
+worker pool overlaps offloads for free; a PostgreSQL~\cite{postgresql} extension and a
+MariaDB~\cite{mariadb} user-defined function pipeline a query's offloads; a Node.js~\cite{nodejs}
+N-API addon uses the libuv~\cite{libuv} asynchronous-work API; and a HAProxy~\cite{haproxy} deployment
+streams each request to an external offload \emph{agent} over the proxy's native Stream Processing
+Offload Engine~\cite{spoe}. Servers backed
+by a \emph{language runtime} need \emph{no asynchronous code at all}: a Go~\cite{golang} handler that
+makes a plain blocking \texttt{cgo} offload is overlapped automatically because the goroutine scheduler
+runs other requests on other OS threads, and a Python \texttt{asyncio}~\cite{cpython} service offloads
+through \texttt{run\_in\_executor} with a one-line change and no native build. The lone case that
+touches existing code is memcached~\cite{memcached}, which has no asynchronous-command interface; we add a connection state and
+the park/resume transition into its state machine---70 lines added, one modified. memcached is thus
+the exception that proves the rule: the line count is dominated by whether the server already exposes
+a deferred-response primitive, a point we formalize next.
+
+
+% =====================================================================
+\section{A Predictive Model of Offload Overlap}
+\label{sec:taxonomy}
+
+The measurements above are not a list of unrelated wins; they follow a pattern. Two properties of a
+server predict both \emph{how much} overlap helps and \emph{how many lines} it takes: the server's
+\emph{concurrency model} and the offload's \emph{weight relative to per-request CPU work}.
+
+\paragraph{Concurrency model predicts the regime.}
+Figure~\ref{fig:regimes} lays out the regimes. A \emph{single event loop} is the extreme case: a
+synchronous offload stalls the whole server, so the win is \emph{dramatic} and grows with offload
+weight (the few-line fix turns a $1$-millisecond catastrophe into full overlap). An \emph{event loop
+with a worker pool} stalls only one loop of several, so the win is \emph{large} but bounded by the
+number of loops. A \emph{thread or goroutine pool} overlaps offloads \emph{automatically}, with zero
+asynchronous code, up to the pool size---the runtime is already doing the work. A \emph{proxy} with a
+native offload engine treats async offload as a first-class, configuration-only feature. Finally, a
+\emph{process- or thread-per-connection} server already overlaps \emph{across} connections for free
+(the OS runs the backends concurrently), so the only edit-addressable win is \emph{within} a single
+query, by pipelining a serial loop of offloads.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{figs/fig_regimes.pdf}
+  \caption{The predictive model, part one: the concurrency model determines what a synchronous
+    offload costs and therefore how much a minimal edit recovers. The win ranges from
+    \emph{dramatic} (a blocked single loop) to \emph{automatic} (a pool that overlaps for free) to
+    \emph{intra-query} (databases that already overlap across connections). Example servers and
+    measured speedups are shown under each regime.}
+  \label{fig:regimes}
+\end{figure}
+
+\paragraph{Code cost follows the same axis.}
+The number of lines is governed by whether the server exposes an asynchronous, deferred-response
+primitive. Plugin and extension interfaces (Redis, nginx, Apache, the databases) and language
+runtimes (Go, Python) provide one, so the integration is purely additive---zero existing lines
+change. A server without such a primitive forces the developer to add the suspend/resume transition
+to its request state machine by hand; memcached is our only such case, and it is the only one that
+modifies an existing line.
+
+\paragraph{Offload weight predicts whether overlap helps at all.}
+The second axis is independent of the server (Figure~\ref{fig:weight}). Overlap reclaims the CPU time
+spent waiting for the offload; if the per-request CPU work is already comparable to the offload, there
+is little to reclaim. On Node.js and Python, a \emph{light} GPU-AES offload (tens of microseconds, on
+the order of the runtime's own per-request overhead) yields essentially no speedup, while the
+\emph{same servers and the same edit} with a heavier offload yield $14$--$25\times$. The rule is
+simple and it bounds applicability: overlap pays exactly when the offload outweighs the per-request
+CPU work. It also explains Wall~3 of \S\ref{sec:transparent}, which is the same condition seen from
+the transparent side.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.86\linewidth]{figs/fig_weight.pdf}
+  \caption{The predictive model, part two: overlap pays only when the offload outweighs per-request
+    CPU work. The \emph{same} servers and the \emph{same} edit give no benefit for a light offload
+    comparable to their per-request overhead (left) and large speedups for a heavier one (right).
+    This single condition also explains the transparent runtime's third wall.}
+  \label{fig:weight}
+\end{figure}
+
+Together the two axes form a map: given a server's concurrency model and an offload's latency, one
+can predict before writing any code whether to bother, how large the win will be, and roughly how
+many lines it will take.
+
+
+% =====================================================================
+\section{Correctness: Overlapping Stateful Offloads}
+\label{sec:correctness}
+
+Overlap reorders work, and reordering is dangerous when the work touches shared state. If the
+post-processing after an offload performs a read-modify-write on a global---a request counter, a
+cache entry, a key in a store---then overlapping two requests can interleave their read-modify-write
+sequences and lose updates. In a deliberately hostile microbenchmark that increments a shared counter
+across the offload, unprotected overlap silently loses hundreds of thousands of updates and corrupts
+the result (Figure~\ref{fig:correctness}, left). The danger is subtle precisely because the offload
+makes the read-modify-write window long: the wider the latency overlap hides, the wider the race it
+opens.
+
+Two mechanisms restore correctness without changing the application. First, \emph{per-connection
+ordering} comes for free: because the runtime assigns one fiber per connection, a connection's
+dependent requests are serialized automatically, so pipelined order-dependent traffic is always
+correct. Second, for state shared \emph{across} connections we provide a transparent
+\emph{conflict detector}. It write-protects the application's data segments, snapshots a version clock
+when a fiber parks at its offload, and treats a write fault that lands on a page modified during the
+park as a conflict; under enforcement it holds a lightweight handler lock from the read to the write
+across the offload, so that only \emph{conflicting} handlers serialize while everyone else stays
+overlapped. On the hostile workload the detector catches every injected conflict and reduces lost
+updates to zero. Crucially, it preserves overlap where a lock would destroy it: under high contention
+a coarse lock serializes the offloads it is meant to protect, whereas the detector keeps
+non-conflicting offloads in flight and runs $4$--$67\times$ faster (Figure~\ref{fig:correctness},
+right). The detector is a property of the overlap mechanism, not of any one integration, so it
+applies equally to transparent fiberization and to the minimal-edit recipe.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{figs/fig_correctness.pdf}
+  \caption{Keeping overlapped stateful offloads correct. Left: unprotected overlap of a shared
+    read-modify-write loses $289$K updates; the transparent page-protection detector reduces this to
+    zero. Right: under high contention a coarse lock serializes the very offloads it protects, while
+    the detector keeps non-conflicting offloads overlapped and runs $4$--$67\times$ faster.}
+  \label{fig:correctness}
+\end{figure}
+
+
+% =====================================================================
+\section{Evaluation}
+\label{sec:eval}
+
+\paragraph{Setup.}
+Experiments run on a server with an NVIDIA RTX PRO 6000 (Blackwell) GPU; the real-accelerator path
+performs AES~\cite{openssl} per request on its own CUDA stream and polls completion with
+\texttt{cudaEventQuery}~\cite{cudastreams}.
+For offload classes we cannot run natively at scale---HSM signatures, post-quantum KEMs, remote
+inference---we use a calibrated software accelerator with a configurable latency, validated against
+its measured single-thread latency, and label every such result as a modeled offload. We drive the
+event-driven servers with standard load generators (\texttt{redis-benchmark}, \texttt{ab}) and the
+databases with their query interfaces. We report three things in turn: the event-loop wins, the
+intra-query database wins, and the proxy result; the cross-server summary is Figure~\ref{fig:spectrum}
+and the code cost is in \S\ref{sec:minimal}.
+
+\paragraph{Event-driven servers.}
+For a single event loop, a synchronous offload caps throughput at one request per offload latency,
+and the few-line async fix removes the cap (Figure~\ref{fig:eventloop}). With a $1$-millisecond
+offload, Redis, Node.js, and Python each jump from under a thousand requests per second to many
+thousands---$14$ to $31\times$ from an edit of a few dozen lines, with no failed requests. The gain
+tracks the offload latency directly, because what the fix recovers is exactly the loop time the
+offload was stealing. On the conservative real-GPU path, where the offload is only tens of
+microseconds, the event-loop-with-pool servers nginx and memcached still gain $5.2\times$ and
+$3.8\times$.
+
+\paragraph{Latency, not just throughput.}
+Overlap helps tail latency, not only peak throughput: by keeping the CPU busy during offloads rather
+than blocking, it sustains low latency to a higher offered load before the latency knee. Under an
+open-loop arrival process, the overlapping path holds its median latency to roughly three times the
+load that the blocking path can (Figure~\ref{fig:latency})---the operating point that matters for a
+latency-sensitive service.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.86\linewidth]{figs/fig_latency.pdf}
+  \caption{Latency under load. With an open-loop arrival process, blocking on the offload drives the
+    median latency up at its saturation point, while overlapping holds low latency to roughly
+    $3\times$ the offered load before its own knee. Overlap is a latency win, not only a throughput
+    win.}
+  \label{fig:latency}
+\end{figure}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.86\linewidth]{figs/fig_eventloop.pdf}
+  \caption{Single-event-loop servers, $1$\,ms offload. A synchronous offload blocks the one thread
+    that serves every connection, capping throughput near $1{,}000$\,req/s regardless of clients; a
+    few-line asynchronous offload recovers $14$--$31\times$, with no failed requests.}
+  \label{fig:eventloop}
+\end{figure}
+
+\paragraph{Databases: intra-query pipelining.}
+A process-per-connection database already overlaps across connections, so the edit-addressable win is
+within a single query that issues many offloads---one per row, say. Issuing them serially pays the
+latency once per offload; issuing them all in flight pays it once. For a query of 256 high-latency
+offloads, PostgreSQL drops from $254$\,ms to $1.8$\,ms ($141\times$) and MariaDB from $254$\,ms to
+$1.2$\,ms ($212\times$), through a user-defined function of about thirty lines and no core edits
+(Figure~\ref{fig:dbpipeline}). This assumes the accelerator accepts the offloads concurrently; for a
+device of queue depth $D$ the win caps near $D\times$.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.92\linewidth]{figs/fig_dbpipeline.pdf}
+  \caption{Intra-query pipelining in a database. A query issuing $256$ offloads serially pays the
+    latency $256$ times ($254$\,ms); pipelining them all in flight pays it once ($1.8$\,ms), a
+    $141\times$ reduction, via a $\sim$$30$-line user-defined function with no core edits. The win
+    caps at the accelerator's queue depth.}
+  \label{fig:dbpipeline}
+\end{figure}
+
+\paragraph{Proxies: a real offload agent.}
+HAProxy carries a native asynchronous offload engine; we stand up a real external agent (an 18-line
+Python program speaking the proxy's offload protocol) that runs the offload on a thread pool while the
+proxy keeps serving. With the agent serializing offloads the proxy sustains $499$ requests per second;
+with the agent overlapping them it sustains $6{,}644$---a $13.3\times$ gain that is configuration on
+the proxy and a few lines in the agent (Figure~\ref{fig:proxy}). The ceiling here is the agent's own
+per-request overhead, not the offload, so a faster agent would go higher; the point is that the
+overlap is real and measurable, not merely an architectural possibility.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.82\linewidth]{figs/fig_proxy.pdf}
+  \caption{HAProxy with a real offload agent over its native engine. A serial agent serializes the
+    offloads; an overlapping agent (a thread pool) keeps the proxy's loop free and lifts throughput
+    $13.3\times$. The integration is proxy configuration plus an $18$-line agent.}
+  \label{fig:proxy}
+\end{figure}
+
+\paragraph{Predicted vs.\ measured.}
+Across all ten servers the regime and offload weight predict the outcome: the single-event-loop
+servers show the largest, weight-dependent wins; the pooled servers overlap automatically with no
+async code; the databases gain only intra-query; and the light-offload cases show the predicted
+absence of benefit. The model of \S\ref{sec:taxonomy} therefore not only summarizes the data but
+would have told us, in advance, what to expect from each server.
+
+
+% =====================================================================
+\section{Discussion and Limitations}
+\label{sec:discussion}
+
+\paragraph{The walls are fundamental.}
+The three walls of \S\ref{sec:transparent} are properties of where an application places behavior,
+not gaps in our engineering. Synchronization issued as a raw system call, thread identity kept in a
+hardware register, and a workload with no idle CPU are each \emph{below} or \emph{around} the symbol
+layer a preloaded library can touch, and they generalize: any storage engine with its own futexes,
+any managed runtime (Go, .NET, V8), and any CPU-bound handler will hit them. This is precisely why
+the minimal-edit path exists.
+
+\paragraph{When overlap does not pay.}
+Overlap reclaims idle CPU during the offload; when per-request CPU rivals the offload, there is
+little to reclaim, and the technique should not be applied. The same condition bounds both ends of
+the spectrum (Wall~3 and Figure~\ref{fig:weight}). For databases, the intra-query win is further
+bounded by the accelerator's queue depth.
+
+\paragraph{Detector scope.}
+The conflict detector catches read-modify-write conflicts on the monitored data segments; it is a
+targeted safety net for the overlap hazard, not a general transactional memory. Workloads whose shared
+state lives outside those segments, or whose correctness depends on properties beyond
+last-writer-wins, would need stronger machinery.
+
+\paragraph{Complementarity.}
+The two ends of the spectrum are not competitors but a division of labor. Transparent fiberization
+serves thread-per-connection servers with no source access; the minimal-edit recipe serves
+everything else, and serves the event-driven servers---the bulk of modern serving---best of all.
+Together they cover the landscape.
+
+
+% =====================================================================
+\section{Related Work}
+\label{sec:related}
+
+Our work sits at an under-occupied point in the design space (Figure~\ref{fig:positioning}): low
+modification to \emph{existing} servers \emph{and} broad coverage across server types. Prior
+approaches achieve one or the other---transparent threading libraries require writing the application
+in their style, point offload integrations target a single server, and async frameworks assume a
+rewrite---but not both.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.86\linewidth]{figs/fig_positioning.pdf}
+  \caption{Positioning. Existing approaches to overlapping work are either low-effort but narrow
+    (threading libraries; our own transparent runtime is one such corner) or broad but high-effort
+    (point integrations, async-framework rewrites). The transparent-to-minimal-edit spectrum reaches
+    the desirable region: little modification to existing servers, across many server types.}
+  \label{fig:positioning}
+\end{figure}
+
+\paragraph{Threads, events, and coroutines.}
+Hiding I/O latency cheaply is an old debate. The event-driven camp (Flash~\cite{flash},
+SEDA~\cite{seda}) avoids thread overhead by structuring the server as a state machine over an event
+loop, at the cost of ``stack ripping''; the user-level-thread camp (Capriccio~\cite{capriccio}, State
+Threads~\cite{statethreads}, \texttt{libtask}~\cite{libtask}, core-aware Arachne~\cite{arachne}, and
+language-level lightweight threads such as Go's goroutines~\cite{golang} and Java's virtual
+threads~\cite{loom}) keeps the synchronous coding style and yields at blocking points. Our fiber
+runtime is in the second lineage and uses a fast register-only switch~\cite{fastwake}. But our
+contribution is not another threading library: it is to \emph{overlap an accelerator offload} in
+servers built either way, to \emph{quantify the modification cost} of doing so across real servers,
+and to map where the transparent form provably stops.
+
+\paragraph{Microsecond-scale systems.}
+A body of work rebuilds the OS or runtime to schedule tasks at microsecond timescales
+efficiently---dataplane operating systems (IX~\cite{ix}), work-stealing for tail latency
+(ZygOS~\cite{zygos}), and
+core-reallocating runtimes (Shenango~\cite{shenango}, Caladan~\cite{caladan},
+Demikernel~\cite{demikernel})---typically over kernel-bypass I/O (DPDK~\cite{dpdk},
+\texttt{io\_uring}~\cite{iouring}). They attack the same killer-microsecond
+problem~\cite{microsecond}, but demand a new software stack and rewritten applications. We instead
+take existing, unmodified servers and ask how little it costs to overlap a single offload inside
+them; the two directions are complementary.
+
+\paragraph{Full hardware offload.}
+One line of work moves the \emph{entire} datapath onto hardware: KV-Direct~\cite{kvdirect} runs a
+key-value store in the NIC, ClickNP~\cite{clicknp} compiles network functions to an FPGA,
+iPipe~\cite{ipipe} offloads distributed application logic onto programmable SmartNICs, and
+GPUnet~\cite{gpunet} lets GPU code drive the network directly. These eliminate the CPU's role rather
+than overlapping with it, and they require rebuilding the application around the accelerator;
+iPipe, notably, must itself schedule the offloaded tasks' varying granularity on the NIC---the dual
+of the latency-hiding problem we solve on the CPU. Our
+target is the opposite and far more common situation: the application stays on the CPU, the
+accelerator handles one fine-grained step, and the CPU must hide that step's latency with almost no
+change to the server.
+
+\paragraph{Accelerator offload integrations.}
+Closer to us, specific systems overlap specific offloads---SSLShader and GPU-crypto work overlapped
+TLS~\cite{sslshader}, QAT engines~\cite{qat} plug compression and crypto into nginx's asynchronous
+paths, and inference-serving systems such as RedisAI~\cite{redisai} and Clipper~\cite{clipper} batch
+and pipeline GPU work. These are valuable point integrations, each tuned to one server and one
+offload. We instead give a \emph{predictive model} that explains and anticipates the win across the
+server landscape, a uniform recipe, and the transparent boundary.
+
+\paragraph{Asynchronous frameworks.}
+Event and async frameworks (libevent~\cite{libevent}, libuv~\cite{libuv}, Seastar~\cite{seastar},
+\texttt{async}/\texttt{await}) make overlap the default---if one writes the application in them from the start. Our concern is the
+opposite: injecting overlap into \emph{existing} servers with minimal change. Proxy offload engines
+(HAProxy's SPOE~\cite{spoe}, Envoy's \texttt{ext\_proc}~\cite{extproc}) make async offload a
+first-class, configuration-only feature for the proxy tier; we measure the HAProxy case directly.
+
+\paragraph{Conflict detection and speculation.}
+Page-protection dirty-tracking, software distributed shared memory~\cite{treadmarks}, and
+transactional memory~\cite{htm} all detect or prevent conflicting concurrent writes. Our detector
+borrows the page-protection technique but is deliberately lightweight and specialized to the one
+hazard overlap introduces---a read-modify-write reordered across an offload.
+
+\paragraph{Symbol interposition.}
+The fragility of interposing versioned glibc symbols is folklore among practitioners; our
+condition-variable finding documents a concrete, reproducible instance and its fix.
+
+
+% =====================================================================
+\section{Conclusion}
+\label{sec:conclusion}
+
+What should the CPU do while it waits for the accelerator? It should \emph{overlap}: do other useful
+work while the offload is in flight. The real question is how much an existing server must change to
+make that happen, and the answer is a spectrum from zero lines to about a hundred. At the zero-edit
+end, a transparent runtime overlaps an unmodified thread-per-connection binary---but it reaches a
+narrow niche and hits three architectural walls, and it cannot help the event-driven servers that
+have the most to gain. A few lines at the offload site, routed through a server's own concurrency
+mechanism, work everywhere and recover $3.8\times$ to $212\times$ across ten production servers. A
+simple model---concurrency model crossed with offload weight---predicts both the speedup and the code
+cost in advance, and a transparent conflict detector keeps the overlap correct when it touches shared
+state. The result is a practical recipe, and a map, for hiding fine-grained accelerator-offload
+latency in the servers that run online services today.

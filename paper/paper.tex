@@ -1,0 +1,102 @@
+\documentclass[11pt]{article}
+
+% Encoding
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+
+% Professional preprint style (reused from arxiv.sty)
+\usepackage{arxiv}
+
+% Content packages
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{listings}
+\usepackage{subcaption}
+\usepackage{enumitem}
+\usepackage{natbib}
+
+\usepackage{hyperref}
+\usepackage{url}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=arxivaccent,
+  citecolor=arxivaccent,
+  urlcolor=arxivaccent,
+  filecolor=arxivaccent,
+  breaklinks=true,
+}
+
+% Code listing style (C / SQL / config)
+\definecolor{codebg}{rgb}{0.95,0.95,0.97}
+\definecolor{codegreen}{rgb}{0.0,0.5,0.0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{codeblue}{rgb}{0.0,0.0,0.7}
+\lstdefinestyle{codestyle}{
+    backgroundcolor=\color{codebg},
+    basicstyle=\ttfamily\small,
+    breakatwhitespace=false,
+    breaklines=true,
+    captionpos=b,
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{codeblue}\bfseries,
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    language=C,
+    showstringspaces=false,
+    numbers=left,
+    numbersep=5pt,
+    frame=single,
+    rulecolor=\color{codegray},
+    tabsize=4,
+}
+\lstset{style=codestyle}
+
+\title{Fine-Grained Computation Offload for Event-Driven Applications}
+
+\author{
+  Bojie Li \\
+  Pine AI
+}
+
+\date{}
+\runningtitle{Fine-Grained Computation Offload for Event-Driven Applications}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Hardware accelerators---GPUs, TPUs, FPGAs, and increasingly \emph{remote} services such as
+hardware security modules, post-quantum cryptography, and inference servers---now sit on the
+critical path of online serving. A request is received, pre-processed, handed to the accelerator,
+post-processed, and answered; while the accelerator works, the calling context stalls. For
+\emph{fine-grained} offloads (microseconds to a few milliseconds), the classic responses---a
+context switch to another thread, or a busy-wait---either waste the CPU or add a wakeup latency
+comparable to the offload itself. The principled fix is to \emph{overlap} the offload with other
+useful work, but this requires injecting concurrency into the application, and the real question is
+\emph{how much the application must change}.
+
+We study this question across the landscape of real, off-the-shelf servers and find a
+\emph{spectrum}. At one extreme, an \texttt{LD\_PRELOAD} M:N fiber runtime overlaps the offload with
+\emph{zero} source modification---but only for thread-per-connection servers, and it hits three hard
+walls: engines that synchronize below libc, managed runtimes that keep thread identity in native
+thread-local storage, and workloads whose per-request CPU already exceeds the offload. At the other
+extreme, a \emph{few lines} injected at the offload site overlap it through the application's own
+concurrency, and this works everywhere. Across ten production servers---Redis, nginx, memcached,
+Node.js, Python/asyncio, Apache, Go, PostgreSQL, MariaDB, and HAProxy---the change is
+\textbf{18--112 lines added and 0--1 lines modified}, yielding \textbf{$3.8\times$ to $212\times$}
+higher throughput on a real GPU and on accelerator-latency models. A simple model predicts both the
+speedup and the code cost from two properties: the server's concurrency model and the offload weight
+relative to per-request work. When the overlapped offload touches shared state, a transparent
+page-protection conflict detector preserves correctness. The result is a practical recipe, and a
+predictive map, for hiding accelerator-offload latency in existing event-driven servers.
+\end{abstract}
+
+\input{body}
+
+\bibliographystyle{plainnat}
+\bibliography{reference}
+
+\end{document}
