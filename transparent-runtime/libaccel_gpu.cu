@@ -26,7 +26,9 @@ static void ensure(void){ if(started) return; pthread_mutex_lock(&mx); if(!start
     started=1; } pthread_mutex_unlock(&mx); }
 extern "C" long accel_submit(unsigned char*buf,int n){
     ensure(); long id=__sync_fetch_and_add(&sub_head,1); int i=id%NSLOT;
-    if(!slots[i].inited){ cudaStreamCreate(&slots[i].st); cudaEventCreate(&slots[i].ev); cudaMallocHost(&slots[i].h,SZ); cudaMalloc(&slots[i].d,SZ); slots[i].inited=1; }
+    if(!slots[i].inited){ pthread_mutex_lock(&mx);   /* serialize slot init (CUDA alloc race under burst concurrency) */
+        if(!slots[i].inited){ cudaStreamCreate(&slots[i].st); cudaEventCreate(&slots[i].ev); cudaMallocHost(&slots[i].h,SZ); cudaMalloc(&slots[i].d,SZ); slots[i].inited=1; }
+        pthread_mutex_unlock(&mx); }
     int cp = n<SZ?n:SZ; memcpy(slots[i].h,buf,cp); slots[i].ubuf=buf; slots[i].n=n;
     uint64_t nb=SZ/16;                                  /* encrypt the full SZ-byte block */
     cudaMemcpyAsync(slots[i].d,slots[i].h,SZ,cudaMemcpyHostToDevice,slots[i].st);
