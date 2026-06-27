@@ -9,7 +9,7 @@ ROOT=/home/ubuntu/transparent-offload/transparent-runtime
 LIB=$ROOT/libaccel_gpu.so
 OUT=$ROOT/apps/app_gpu_results.csv
 rps(){ taskset -c 4 ab -k -c "$2" -t 5 -n 100000000 "$1" 2>/dev/null \
-       | grep -oE '[0-9.]+ requests per second' | head -1 | awk '{print $1}'; }
+       | awk '/Requests per second/{print $4}'; }   # ab format: "Requests per second:  N"
 wait_port(){ for i in $(seq 1 80); do (echo >"/dev/tcp/127.0.0.1/$1") 2>/dev/null && return 0; sleep 0.2; done; return 1; }
 
 echo "app,class,offload,baseline_rps,overlap_rps,speedup" > "$OUT"
