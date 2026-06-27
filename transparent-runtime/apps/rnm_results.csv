@@ -1,0 +1,4 @@
+app,class,sync_rps,async_rps,speedup,gpu_util
+redis,single-event-loop,8009.61,24125.45,3.01,88
+nginx,event-loop-pool,8598.37,23555.74,2.74,99
+memcached,event-loop-pool,1960.00,5752.50,2.93,46
