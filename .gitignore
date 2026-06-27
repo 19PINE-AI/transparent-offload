@@ -107,3 +107,7 @@ transparent-runtime/apps/nginx-run/*_temp/
 /transparent-runtime/gemm_calib
 /transparent-runtime/remote_hsm
 /transparent-runtime/apps/.gpu_all_done
+/transparent-runtime/apps/.haproxy_c_done
+/transparent-runtime/apps/.py_blocksize_done
+/transparent-runtime/apps/.rnm_done
+/transparent-runtime/apps/haproxy_accel/spoa_agent_c
