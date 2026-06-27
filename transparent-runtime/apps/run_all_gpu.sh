@@ -4,5 +4,6 @@
 ROOT=/home/ubuntu/transparent-offload/transparent-runtime
 rm -f "$ROOT/apps/.gpu_all_done"
 bash "$ROOT/apps/aes_blocksize_sweep.sh"
+bash "$ROOT/apps/aes_blocksize_py.sh"
 bash "$ROOT/apps/app_gpu_sweep.sh"
 touch "$ROOT/apps/.gpu_all_done"
