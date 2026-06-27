@@ -6,7 +6,7 @@ ROOT=/home/ubuntu/transparent-offload/transparent-runtime
 LIB=$ROOT/libaccel_gpu.so
 PYSITE=$(python3 -c 'import site;print(site.getusersitepackages())')
 OUT=$ROOT/apps/aes_blocksize_py_results.csv
-SIZES="${SIZES:-4096 16384 65536 262144 1048576 2097152 4194304 8388608}"
+SIZES="${SIZES:-4096 8192 16384 32768 65536 131072 262144 524288 1048576 2097152 4194304 8388608}"
 rps(){ taskset -c 4 ab -k -c 50 -t 5 -n 100000000 "$1" 2>/dev/null | awk '/Requests per second/{print $4}'; }
 wp(){ for i in $(seq 1 80); do (echo >"/dev/tcp/127.0.0.1/$1") 2>/dev/null && return 0; sleep 0.2; done; return 1; }
 cat > /tmp/aeslat.c <<'EOF'
