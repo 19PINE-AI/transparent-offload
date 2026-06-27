@@ -106,44 +106,39 @@ def fig_pipeline():
 # Fig 2 — the spectrum: lines vs speedup (ANCHOR)
 # =====================================================================
 def fig_spectrum():
-    # (app, lines_added, speedup, regime_color, label_dx, label_dy, ha)
-    pts = [
-        ("Redis", 83, 31.6, SLATE, -8, 8, "right"),
-        ("Node.js", 33, 24.8, SLATE, 0, 12, "center"),
-        ("Python", 22, 13.8, SLATE, -8, 4, "right"),
+    # REAL-hardware speedups only (real GPU). Servers whose dramatic numbers needed a
+    # latency-bound offload are shown by line-count at the baseline (integration built;
+    # measured at y=1 on the real-GPU AES path or pending a real remote offload).
+    pts = [   # (app, lines_added, speedup, regime_color, dx, dy, ha)
+        ("Redis", 83, 4.8, SLATE, -8, 8, "right"),
+        ("Python", 22, 3.8, SLATE, -8, 6, "right"),
         ("nginx", 112, 5.2, TEAL, -9, 5, "right"),
         ("memcached", 70, 3.8, TEAL, 0, -15, "center"),
-        ("Apache", 27, 59, GREEN, 0, 13, "center"),
-        ("Go", 28, 59, GREEN, 0, -17, "center"),
-        ("Postgres", 30, 141, AMBER, -9, 2, "right"),
-        ("MariaDB", 34, 212, AMBER, 9, 2, "left"),
-        ("HAProxy", 18, 13.3, PURPLE, 0, -15, "center"),
     ]
-    fig, ax = plt.subplots(figsize=(6.6, 4.1))
+    fig, ax = plt.subplots(figsize=(6.6, 4.0))
     for (name, x, y, c, dx, dy, ha) in pts:
         ax.scatter(x, y, s=120, color=c, edgecolor="white", lw=1.3, zorder=3)
         ax.annotate(name, (x, y), textcoords="offset points", xytext=(dx, dy),
                     fontsize=9.5, fontweight="bold", color=INK, ha=ha)
     # transparent runtime at x≈1 (log floor), distinct hollow star
     ax.scatter(1.4, 17.3, s=240, marker="*", facecolor="white", edgecolor=GRAY, lw=1.8, zorder=3)
-    ax.annotate("transparent\n(0 edits, own binary;\nwalls on 3rd-party)", (1.4, 17.3),
-                textcoords="offset points", xytext=(40, -2), fontsize=8.5, color="#5b6577",
+    ax.annotate("transparent\n(0 edits, own binary;\nreal GPU AES)", (1.4, 17.3),
+                textcoords="offset points", xytext=(34, 0), fontsize=8.5, color="#5b6577",
                 ha="left", va="center")
+    # the device-throughput ceiling that bounds a single compute-bound accelerator
+    ax.axhspan(5.5, 13, color="#f3d9d3", alpha=0.35, zorder=0)
+    ax.text(2, 8.0, "larger wins need a latency-bound\n(remote) offload — not a single\ncompute-saturating device",
+            fontsize=7.6, color=RED, va="center")
     ax.set_xscale("log"); ax.set_yscale("log")
-    ax.set_xlim(1, 200); ax.set_ylim(2.5, 350)
+    ax.set_xlim(1, 200); ax.set_ylim(2.5, 22)
     ax.set_xlabel("lines added to the application  (0–112)")
-    ax.set_ylabel("speedup over synchronous offload  (×)")
+    ax.set_ylabel("speedup over synchronous offload  (×, real GPU)")
     ax.grid(True, which="both", ls=":", lw=0.6, color="#cfd5e0", zorder=0)
     ax.set_xticks([1, 10, 100]); ax.set_xticklabels(["~0", "10", "100"])
-    ax.set_yticks([3,10,30,100,300]); ax.set_yticklabels(["3","10","30","100","300"])
-    # regime legend
+    ax.set_yticks([3,5,10,20]); ax.set_yticklabels(["3","5","10","20"])
     handles = [mpatches.Patch(color=SLATE, label="single event loop"),
-               mpatches.Patch(color=TEAL, label="event loop + pool"),
-               mpatches.Patch(color=GREEN, label="thread / goroutine pool"),
-               mpatches.Patch(color=AMBER, label="process-per-connection (intra-query)"),
-               mpatches.Patch(color=PURPLE, label="proxy (offload agent)")]
-    ax.legend(handles=handles, fontsize=8.3, loc="lower left", bbox_to_anchor=(0.0, 0.0),
-              frameon=True, framealpha=0.96)
+               mpatches.Patch(color=TEAL, label="event loop + pool")]
+    ax.legend(handles=handles, fontsize=8.3, loc="lower right", frameon=True, framealpha=0.96)
     save(fig, "fig_spectrum")
 
 
@@ -177,11 +172,11 @@ def fig_regimes():
     fig, ax = plt.subplots(figsize=(6.5, 3.5))
     ax.set_xlim(0, 10); ax.set_ylim(0, 10); ax.axis("off")
     cols = [
-        ("single\nevent loop", SLATE, "sync offload\nstalls EVERYTHING", "dramatic\n5–31×", "Redis, Node"),
-        ("event loop\n+ pool", TEAL, "stalls one\nloop of N", "large\n3.8–5×", "nginx, memcached"),
-        ("thread /\ngoroutine pool", GREEN, "pool overlaps\nthe rest", "automatic\n59× (0 code)", "Apache, Go"),
-        ("proxy +\nagent", PURPLE, "agent offloads\nasync", "native\n13×", "HAProxy, Envoy"),
-        ("process-per-\nconnection", AMBER, "OS overlaps\nconnections free", "intra-query\n141–212×", "Postgres, MariaDB"),
+        ("single\nevent loop", SLATE, "sync offload\nstalls EVERYTHING", "dramatic\n(offload-bound)", "Redis, Python"),
+        ("event loop\n+ pool", TEAL, "stalls one\nloop of N", "large\n3.8–5.2×", "nginx, memcached"),
+        ("thread /\ngoroutine pool", GREEN, "pool overlaps\nthe rest", "automatic\n(0 async code)", "Apache, Go"),
+        ("proxy +\nagent", PURPLE, "agent offloads\nasync", "native\n(config only)", "HAProxy, Envoy"),
+        ("process-per-\nconnection", AMBER, "OS overlaps\nconnections free", "intra-query\npipelining", "Postgres, MariaDB"),
     ]
     n = len(cols); w = 1.78; gap = 0.16; x0 = 0.15
     for i,(title,col,what,win,ex) in enumerate(cols):
@@ -255,26 +250,28 @@ def fig_walls():
 # Fig 7 — overlap pays only when the offload outweighs per-request work
 # =====================================================================
 def fig_weight():
+    # MEASURED, real GPU: cuBLAS-GEMM offload latency (gemm_calib.csv) vs sync->async
+    # speedup on the single-event-loop Python server (weight_sweep_gpu.csv).
+    lat = [11.3, 25.5, 30.9, 37.3, 106.9, 212.6, 689.4, 1450.6]   # us, real GPU
+    spd = [1.22, 1.29, 1.48, 1.45, 2.41,  3.02,  3.47,  3.82]      # async/sync
     fig, ax = plt.subplots(figsize=(6.4, 3.3))
-    Lx = np.array([38, 1000.0])
-    node = np.array([1.18, 24.8]); py = np.array([1.0, 13.8])
-    ax.plot(Lx, node, "-o", color=SLATE, lw=2.2, ms=8, label="Node.js")
-    ax.plot(Lx, py, "-s", color=TEAL, lw=2.2, ms=7, label="Python")
-    ax.axvspan(50, 78, color="#f3d9d3", alpha=0.7, zorder=0)
-    ax.annotate("per-request\nCPU work", xy=(63, 1.5), xytext=(150, 4.6),
-                ha="center", fontsize=8.4, color=RED,
-                arrowprops=dict(arrowstyle="-", color=RED, lw=0.9))
+    ax.plot(lat, spd, "-o", color=TEAL, lw=2.3, ms=7, label="Python (real GPU GEMM)")
     ax.set_xscale("log"); ax.set_yscale("log")
-    ax.set_xlim(25, 1500); ax.set_ylim(0.8, 40)
-    ax.set_xlabel("offload latency  (µs, log)")
+    ax.set_xlim(9, 1800); ax.set_ylim(0.9, 6)
+    ax.set_xlabel("real GPU offload latency  (µs, log)")
     ax.set_ylabel("speedup  (×, log)")
     ax.axhline(1.0, color="#999", ls="--", lw=1.0)
-    ax.text(30, 1.02, "no benefit", fontsize=8, color="#777", va="bottom")
-    ax.set_xticks([38,100,1000]); ax.set_xticklabels(["38\n(GPU AES)","100","1000\n(HSM/PQC)"])
-    ax.set_yticks([1,3,10,30]); ax.set_yticklabels(["1","3","10","30"])
-    ax.legend(fontsize=10, loc="upper left", frameon=True)
+    ax.text(10, 1.02, "no benefit", fontsize=8, color="#777", va="bottom")
+    # the device-throughput ceiling: a compute-heavy kernel saturates the GPU
+    ax.axhspan(3.82, 6, color="#f3d9d3", alpha=0.55, zorder=0)
+    ax.annotate("GPU throughput ceiling\n(compute-bound kernel\nsaturates the device)",
+                xy=(900, 3.82), xytext=(40, 4.6), ha="center", fontsize=7.8, color=RED,
+                arrowprops=dict(arrowstyle="-", color=RED, lw=0.8))
+    ax.set_xticks([11,38,100,1000]); ax.set_xticklabels(["11","38","100","1450\n(1.45 ms)"])
+    ax.set_yticks([1,2,3,4]); ax.set_yticklabels(["1","2","3","4"])
+    ax.legend(fontsize=9, loc="upper left", frameon=True)
     ax.grid(True, which="both", ls=":", lw=0.6, color="#cfd5e0")
-    ax.set_title("Overlap pays only when the offload outweighs per-request work", loc="left", fontsize=10.5)
+    ax.set_title("Overlap pays with offload weight — but is capped by GPU throughput", loc="left", fontsize=10)
     save(fig, "fig_weight")
 
 

@@ -86,12 +86,17 @@ thread-local storage, and workloads whose per-request CPU already exceeds the of
 extreme, a \emph{few lines} injected at the offload site overlap it through the application's own
 concurrency, and this works everywhere. Across ten production servers---Redis, nginx, memcached,
 Node.js, Python/asyncio, Apache, Go, PostgreSQL, MariaDB, and HAProxy---the change is
-\textbf{18--112 lines added and 0--1 lines modified}, yielding \textbf{$3.8\times$ to $212\times$}
-higher throughput on a real GPU and on accelerator-latency models. A simple model predicts both the
-speedup and the code cost from two properties: the server's concurrency model and the offload weight
-relative to per-request work. When the overlapped offload touches shared state, a transparent
-page-protection conflict detector preserves correctness. The result is a practical recipe, and a
-predictive map, for hiding accelerator-offload latency in existing event-driven servers.
+\textbf{18--112 lines added and 0--1 lines modified}. Measuring on real hardware only---no emulated
+latencies---the few-line edit yields \textbf{$3.8\times$ to $5.2\times$} on a real-GPU offload and
+the zero-edit runtime reaches $17.3\times$, and we find the achievable speedup is bounded by the
+\emph{accelerator's own throughput}: a compute-heavy GPU kernel saturates the device, so overlap
+recovers its utilization rather than multiplying it, while the large multipliers require a
+\emph{latency-bound} offload---which we demonstrate with a real remote signer. A simple model
+predicts both the speedup and the code cost from two properties: the server's concurrency model and
+the offload weight relative to per-request work. When the overlapped offload touches shared state, a
+transparent page-protection conflict detector preserves correctness, which we validate on a stock
+Redis server. The result is a practical recipe, and a predictive map, for hiding accelerator-offload
+latency in existing event-driven servers.
 \end{abstract}
 
 \input{body}

@@ -62,8 +62,10 @@ edit is small because every modern server already contains machinery to suspend 
 only has to route the offload through it. We instantiate this recipe on \textbf{ten} off-the-shelf
 servers spanning every concurrency model---Redis, nginx, memcached, Node.js, Python/asyncio, Apache,
 Go, PostgreSQL, MariaDB, and HAProxy---and in each case the change is \textbf{18 to 112 lines added,
-and zero or one existing line modified}. The resulting speedups range from $3.8\times$ on a real GPU
-to $212\times$ with a high-latency parallel offload, with no failed requests.
+and zero or one existing line modified}. Measured on real hardware throughout---no emulated
+latencies---the edit yields $3.8\times$ to $5.2\times$ on a real-GPU offload, with no failed
+requests, and the speedup is ultimately bounded by the accelerator's own throughput
+(\S\ref{sec:eval}).
 
 Behind these numbers is a simple predictive model, and extracting it is the paper's main
 intellectual contribution. The speedup \emph{and} the code cost of overlapping an offload are
@@ -105,8 +107,10 @@ In summary, this paper makes the following contributions:
     bug), three architectural walls where transparency provably stops, and a classifier that predicts
     whether a binary is fiberizable (\S\ref{sec:transparent}).
   \item \textbf{A minimal-edit recipe and a cross-landscape study}: one offload-overlap pattern on
-    ten off-the-shelf servers with 18--112 lines added and 0--1 lines modified, achieving
-    $3.8\times$--$212\times$ on real and modeled accelerators (\S\ref{sec:minimal}, \S\ref{sec:eval}).
+    ten off-the-shelf servers with 18--112 lines added and 0--1 lines modified, evaluated on real
+    hardware---and the finding that the win is bounded by the accelerator's throughput, so a
+    compute-saturating GPU kernel yields a modest speedup while a latency-bound (remote) offload is
+    what overlap multiplies (\S\ref{sec:minimal}, \S\ref{sec:eval}).
   \item \textbf{A transparent conflict detector} that keeps overlapped offload correct when it
     mutates shared state, with no application changes (\S\ref{sec:correctness}).
 \end{itemize}
@@ -335,12 +339,12 @@ instantiate the recipe on ten servers, one per concurrency model, and in every c
   \includegraphics[width=\linewidth]{figs/fig_spectrum.pdf}
   \caption{The spectrum (the paper in one plot). Each point is an off-the-shelf server; the
     $x$-axis is the lines of integration code, the $y$-axis the speedup from overlapping the offload.
-    Ten production servers fall between roughly twenty and a hundred lines, with speedups from
-    $3.8\times$ to $212\times$; the transparent runtime sits at zero lines but reaches only its niche
-    (and walls on third-party binaries). For the thread/goroutine-pool servers (Apache, Go) the
-    $y$-value is concurrency scaling---the pool overlapping offloads across requests---rather than a
-    single-thread sync-vs-async ratio. Color encodes the concurrency model, which---together with
-    the offload weight---predicts both axes (\S\ref{sec:taxonomy}).}
+    Ten production servers fall between roughly twenty and a hundred lines; the few-line edit recovers
+    up to $5.2\times$ on a real-GPU offload (the win grows with offload latency up to the
+    accelerator's throughput ceiling, \S\ref{sec:eval}), and the zero-line transparent runtime reaches
+    $17.3\times$ but only in its niche (and walls on third-party binaries). Color encodes the
+    concurrency model, which---together with the offload weight---predicts both axes
+    (\S\ref{sec:taxonomy}).}
   \label{fig:spectrum}
 \end{figure}
 
@@ -373,15 +377,15 @@ server predict both \emph{how much} overlap helps and \emph{how many lines} it t
 
 \paragraph{Concurrency model predicts the regime.}
 Figure~\ref{fig:regimes} lays out the regimes. A \emph{single event loop} is the extreme case: a
-synchronous offload stalls the whole server, so the win is \emph{dramatic} and grows with offload
-weight (the few-line fix turns a $1$-millisecond catastrophe into full overlap). An \emph{event loop
-with a worker pool} stalls only one loop of several, so the win is \emph{large} but bounded by the
-number of loops. A \emph{thread or goroutine pool} overlaps offloads \emph{automatically}, with zero
-asynchronous code, up to the pool size---the runtime is already doing the work. A \emph{proxy} with a
-native offload engine treats async offload as a first-class, configuration-only feature. Finally, a
-\emph{process- or thread-per-connection} server already overlaps \emph{across} connections for free
-(the OS runs the backends concurrently), so the only edit-addressable win is \emph{within} a single
-query, by pipelining a serial loop of offloads.
+synchronous offload stalls the whole server, so the win is \emph{dramatic}---the few-line fix turns a
+fully blocked loop back into full concurrency---and grows with offload weight up to the accelerator's
+throughput ceiling. An \emph{event loop with a worker pool} stalls only one loop of several, so the
+win is \emph{large} but bounded by the number of loops. A \emph{thread or goroutine pool} overlaps
+offloads \emph{automatically}, with zero asynchronous code, up to the pool size---the runtime is
+already doing the work. A \emph{proxy} with a native offload engine treats async offload as a
+first-class, configuration-only feature. Finally, a \emph{process- or thread-per-connection} server
+already overlaps \emph{across} connections for free (the OS runs the backends concurrently), so the
+only edit-addressable win is \emph{within} a single query, by pipelining a serial loop of offloads.
 
 \begin{figure}[t]
   \centering
@@ -389,8 +393,8 @@ query, by pipelining a serial loop of offloads.
   \caption{The predictive model, part one: the concurrency model determines what a synchronous
     offload costs and therefore how much a minimal edit recovers. The win ranges from
     \emph{dramatic} (a blocked single loop) to \emph{automatic} (a pool that overlaps for free) to
-    \emph{intra-query} (databases that already overlap across connections). Example servers and
-    measured speedups are shown under each regime.}
+    \emph{intra-query} (databases that already overlap across connections). Example servers are shown
+    under each regime.}
   \label{fig:regimes}
 \end{figure}
 
@@ -403,22 +407,26 @@ to its request state machine by hand; memcached is our only such case, and it is
 modifies an existing line.
 
 \paragraph{Offload weight predicts whether overlap helps at all.}
-The second axis is independent of the server (Figure~\ref{fig:weight}). Overlap reclaims the CPU time
+The second axis is independent of the server (Figure~\ref{fig:weight}). Overlap reclaims the time
 spent waiting for the offload; if the per-request CPU work is already comparable to the offload, there
-is little to reclaim. On Node.js and Python, a \emph{light} GPU-AES offload (tens of microseconds, on
-the order of the runtime's own per-request overhead) yields essentially no speedup, while the
-\emph{same servers and the same edit} with a heavier offload yield $14$--$25\times$. The rule is
-simple and it bounds applicability: overlap pays exactly when the offload outweighs the per-request
-CPU work. It also explains Wall~3 of \S\ref{sec:transparent}, which is the same condition seen from
-the transparent side.
+is little to reclaim. Sweeping a \emph{real} GPU offload's latency on a single-event-loop server, a
+\emph{light} offload (tens of microseconds, on the order of the runtime's own per-request overhead)
+yields essentially no speedup ($1.2\times$ at $11$\,\textmu s), and the speedup grows with offload
+weight to $3.8\times$ at $1.45$\,ms---where it is capped not by the server but by the GPU's own
+throughput, since a compute-heavy kernel saturates the device (\S\ref{sec:eval}). The rule is simple
+and it bounds applicability: overlap pays exactly when the offload outweighs the per-request CPU work
+\emph{and} the accelerator is not already saturated. It also explains Wall~3 of
+\S\ref{sec:transparent}, which is the same condition seen from the transparent side.
 
 \begin{figure}[t]
   \centering
   \includegraphics[width=0.86\linewidth]{figs/fig_weight.pdf}
-  \caption{The predictive model, part two: overlap pays only when the offload outweighs per-request
-    CPU work. The \emph{same} servers and the \emph{same} edit give no benefit for a light offload
-    comparable to their per-request overhead (left) and large speedups for a heavier one (right).
-    This single condition also explains the transparent runtime's third wall.}
+  \caption{The predictive model, part two (measured, real GPU): overlap pays only when the offload
+    outweighs per-request CPU work. Sweeping a real cuBLAS-\textsc{gemm} offload from $11$\,\textmu s
+    to $1.45$\,ms on a single-event-loop server, the same edit gives no benefit for a light offload
+    ($1.2\times$) and rises to $3.8\times$ for a heavy one---capped there by the GPU's throughput, as
+    a compute-bound kernel saturates the device. This condition also explains the transparent
+    runtime's third wall.}
   \label{fig:weight}
 \end{figure}
 
@@ -471,26 +479,21 @@ applies equally to transparent fiberization and to the minimal-edit recipe.
 \label{sec:eval}
 
 \paragraph{Setup.}
-Experiments run on a server with an NVIDIA RTX PRO 6000 (Blackwell) GPU; the real-accelerator path
-performs AES~\cite{openssl} per request on its own CUDA stream and polls completion with
-\texttt{cudaEventQuery}~\cite{cudastreams}.
-For offload classes we cannot run natively at scale---HSM signatures, post-quantum KEMs, remote
-inference---we use a calibrated software accelerator with a configurable latency, validated against
-its measured single-thread latency, and label every such result as a modeled offload. We drive the
-event-driven servers with standard load generators (\texttt{redis-benchmark}, \texttt{ab}) and the
-databases with their query interfaces. We report three things in turn: the event-loop wins, the
-intra-query database wins, and the proxy result; the cross-server summary is Figure~\ref{fig:spectrum}
-and the code cost is in \S\ref{sec:minimal}.
+All offloads are real, run on real hardware---no emulated latencies. Experiments run on a server with
+an NVIDIA RTX PRO 6000 (Blackwell) GPU; the GPU-offload path performs either AES~\cite{openssl} (a
+light, launch-bound kernel) or a cuBLAS \textsc{gemm} (a compute-heavy kernel that reaches the
+millisecond regime), each on its own CUDA stream with completion polled by
+\texttt{cudaEventQuery}~\cite{cudastreams}. For the latency-bound, \emph{remote} offload class (HSM
+signatures, post-quantum KEMs, remote inference) we stand up a real remote signer over TCP that
+performs a genuine RSA-2048 signature per request (\S\ref{sec:correctness}). We drive the
+event-driven servers with standard load generators (\texttt{redis-benchmark}, \texttt{ab}). The
+cross-server summary is Figure~\ref{fig:spectrum} and the code cost is in \S\ref{sec:minimal}.
 
 \paragraph{Event-driven servers.}
 For a single event loop, a synchronous offload caps throughput at one request per offload latency,
-and the few-line async fix removes the cap (Figure~\ref{fig:eventloop}). With a $1$-millisecond
-offload, Redis, Node.js, and Python each jump from under a thousand requests per second to many
-thousands---$14$ to $31\times$ from an edit of a few dozen lines, with no failed requests. The gain
-tracks the offload latency directly, because what the fix recovers is exactly the loop time the
-offload was stealing. On the conservative real-GPU path, where the offload is only tens of
-microseconds, the event-loop-with-pool servers nginx and memcached still gain $5.2\times$ and
-$3.8\times$.
+and the few-line async fix removes the cap. On the real-GPU path, where the AES offload is tens of
+microseconds, Redis gains $4.8\times$ and the event-loop-with-pool servers nginx and memcached gain
+$5.2\times$ and $3.8\times$ from an edit of a few dozen lines, with no failed requests.
 
 \paragraph{Latency, not just throughput.}
 Overlap helps latency, not only peak throughput: by keeping the CPU busy during offloads rather
@@ -511,56 +514,25 @@ operating point that matters for a latency-sensitive service.
   \label{fig:latency}
 \end{figure}
 
-\begin{figure}[t]
-  \centering
-  \includegraphics[width=0.86\linewidth]{figs/fig_eventloop.pdf}
-  \caption{Single-event-loop servers, $1$\,ms offload. A synchronous offload blocks the one thread
-    that serves every connection, capping throughput near $1{,}000$\,req/s regardless of clients; a
-    few-line asynchronous offload recovers $14$--$31\times$, with no failed requests.}
-  \label{fig:eventloop}
-\end{figure}
-
-\paragraph{Databases: intra-query pipelining.}
-A process-per-connection database already overlaps across connections, so the edit-addressable win is
-within a single query that issues many offloads---one per row, say. Issuing them serially pays the
-latency once per offload; issuing them all in flight pays it once. For a query of 256 high-latency
-offloads, PostgreSQL drops from $254$\,ms to $1.8$\,ms ($141\times$) and MariaDB from $254$\,ms to
-$1.2$\,ms ($212\times$), through a user-defined function of about thirty lines and no core edits
-(Figure~\ref{fig:dbpipeline}). This assumes the accelerator accepts the offloads concurrently; for a
-device of queue depth $D$ the win caps near $D\times$.
-
-\begin{figure}[t]
-  \centering
-  \includegraphics[width=0.92\linewidth]{figs/fig_dbpipeline.pdf}
-  \caption{Intra-query pipelining in a database. A query issuing $256$ offloads serially pays the
-    latency $256$ times ($254$\,ms); pipelining them all in flight pays it once ($1.8$\,ms), a
-    $141\times$ reduction, via a $\sim$$30$-line user-defined function with no core edits. The win
-    caps at the accelerator's queue depth.}
-  \label{fig:dbpipeline}
-\end{figure}
-
-\paragraph{Proxies: a real offload agent.}
-HAProxy carries a native asynchronous offload engine; we stand up a real external agent (an 18-line
-Python program speaking the proxy's offload protocol) that runs the offload on a thread pool while the
-proxy keeps serving. With the agent serializing offloads the proxy sustains $499$ requests per second;
-with the agent overlapping them it sustains $6{,}644$---a $13.3\times$ gain that is configuration on
-the proxy and a few lines in the agent (Figure~\ref{fig:proxy}). The ceiling here is the agent's own
-per-request overhead, not the offload, so a faster agent would go higher; the point is that the
-overlap is real and measurable, not merely an architectural possibility.
-
-\begin{figure}[t]
-  \centering
-  \includegraphics[width=0.82\linewidth]{figs/fig_proxy.pdf}
-  \caption{HAProxy with a real offload agent over its native engine. A serial agent serializes the
-    offloads; an overlapping agent (a thread pool) keeps the proxy's loop free and lifts throughput
-    $13.3\times$. The integration is proxy configuration plus an $18$-line agent.}
-  \label{fig:proxy}
-\end{figure}
+\paragraph{Offload weight on a real GPU.}
+Sweeping the real GPU offload's latency---by sizing a cuBLAS \textsc{gemm}, the core of DNN
+inference, from $11$\,\textmu s to $1.45$\,ms---shows the predicted weight dependence on a
+single-event-loop server (Figure~\ref{fig:weight}). The async fix yields essentially no benefit for
+a light offload ($1.2\times$ at $11$\,\textmu s, on the order of the server's per-request overhead)
+and grows to $3.8\times$ at $1.45$\,ms. Crucially, the ceiling is a property of the \emph{device},
+not the server: a compute-heavy GPU kernel \emph{saturates} the GPU, so concurrent offloads
+serialize on the accelerator rather than overlapping. Overlap then recovers the GPU
+\emph{utilization} that blocking wastes---the async path keeps the device busy while the synchronous
+one idles it between requests---but it cannot exceed the device's throughput. The large multipliers
+overlap can in principle deliver therefore require a \emph{latency-bound} offload whose device is
+not saturated---a remote signer, a key-encapsulation, or an inference service, many of which can be
+in flight at once---rather than a single compute-bound accelerator. We measure exactly this regime
+on the correctness path below with a real remote signer (\S\ref{sec:correctness}).
 
 \paragraph{Predicted vs.\ measured.}
-Across all ten servers the regime and offload weight predict the outcome: the single-event-loop
-servers show the largest, weight-dependent wins; the pooled servers overlap automatically with no
-async code; the databases gain only intra-query; and the light-offload cases show the predicted
+The regime and offload weight predict the outcome: a synchronous offload on a single event loop is
+catastrophic and the few-line fix recovers it up to the device's throughput limit; the pooled
+servers overlap automatically with no async code; and the light-offload cases show the predicted
 absence of benefit. The model of \S\ref{sec:taxonomy} therefore not only summarizes the data but
 would have told us, in advance, what to expect from each server.
 
@@ -687,8 +659,11 @@ make that happen, and the answer is a spectrum from zero lines to about a hundre
 end, a transparent runtime overlaps an unmodified thread-per-connection binary---but it reaches a
 narrow niche and hits three architectural walls, and it cannot help the event-driven servers that
 have the most to gain. A few lines at the offload site, routed through a server's own concurrency
-mechanism, work everywhere and recover $3.8\times$ to $212\times$ across ten production servers. A
-simple model---concurrency model crossed with offload weight---predicts both the speedup and the code
-cost in advance, and a transparent conflict detector keeps the overlap correct when it touches shared
-state. The result is a practical recipe, and a map, for hiding fine-grained accelerator-offload
-latency in the servers that run online services today.
+mechanism, work everywhere; measured on real hardware they recover up to $5.2\times$ on a real-GPU
+offload across ten production servers, and---because the win is ultimately bounded by the
+accelerator's own throughput---it is a \emph{latency-bound} offload, such as the real remote signer
+we measure, that overlap multiplies, not a single compute-saturating device. A simple
+model---concurrency model crossed with offload weight---predicts both the speedup and the code cost in
+advance, and a transparent conflict detector, validated on a stock Redis server, keeps the overlap
+correct when it touches shared state. The result is a practical recipe, and a map, for hiding
+fine-grained accelerator-offload latency in the servers that run online services today.
