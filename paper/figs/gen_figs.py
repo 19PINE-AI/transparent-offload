@@ -179,10 +179,10 @@ def fig_regimes():
     fig, ax = plt.subplots(figsize=(6.5, 3.5))
     ax.set_xlim(0, 10); ax.set_ylim(0, 10); ax.axis("off")
     cols = [
-        ("single\nevent loop", SLATE, "sync offload\nstalls EVERYTHING", "dramatic\n(offload-bound)", "Redis, Python"),
-        ("event loop\n+ pool", TEAL, "stalls one\nloop of N", "large\n3.8–5.2×", "nginx, memcached"),
-        ("thread /\ngoroutine pool", GREEN, "pool overlaps\nthe rest", "automatic\n(0 async code)", "Apache, Go"),
-        ("proxy +\nagent", PURPLE, "agent offloads\nasync", "native\n(config only)", "HAProxy, Envoy"),
+        ("single\nevent loop", SLATE, "sync offload\nstalls EVERYTHING", "2.5–3.0×", "Redis, Node"),
+        ("event loop\n+ pool", TEAL, "stalls one\nloop of N", "2.7–2.9×", "nginx, memcached"),
+        ("thread /\ngoroutine pool", GREEN, "pool overlaps\nthe rest", "3.0–3.5×\n(0 async code)", "Apache, Go"),
+        ("proxy +\nagent", PURPLE, "agent offloads\nasync", "2.1× (C agent)", "HAProxy"),
         ("process-per-\nconnection", AMBER, "OS overlaps\nconnections free", "intra-query\npipelining", "Postgres, MariaDB"),
     ]
     n = len(cols); w = 1.78; gap = 0.16; x0 = 0.15
@@ -287,30 +287,30 @@ def fig_weight():
 # =====================================================================
 def fig_correctness():
     fig, axes = plt.subplots(1, 2, figsize=(6.6, 3.0), gridspec_kw=dict(wspace=0.45, width_ratios=[1,1]))
-    # left: lost updates
+    # left: lost updates (measured on stock Redis, real GPU offload)
     ax = axes[0]
-    labels = ["unlocked\n(overlap)", "detector\n+ enforce"]
-    lost = [289411, 0]
-    bars = ax.bar(labels, [max(v,1) for v in lost], color=[RED, GREEN], ec=INK, lw=1.0, width=0.6)
-    ax.set_yscale("log"); ax.set_ylim(0.5, 1e6)
+    labels = ["naive\n(overlap)", "detector\n+ enforce"]
+    lost = [23450, 0]
+    ax.bar(labels, [max(v,1) for v in lost], color=[RED, GREEN], ec=INK, lw=1.0, width=0.6)
+    ax.set_yscale("log"); ax.set_ylim(0.5, 1e5)
     ax.set_ylabel("lost updates  (log)")
-    ax.text(0, 289411*1.4, "289 K\ncorrupted", ha="center", fontsize=9.5, color=RED, fontweight="bold")
-    ax.text(1, 1.6, "0\ncorrect", ha="center", fontsize=9.5, color=GREEN, fontweight="bold")
-    ax.set_title("Shared-state safety", fontsize=10.5)
+    ax.text(0, 23450*1.6, "23,450\nlost", ha="center", fontsize=9.5, color=RED, fontweight="bold")
+    ax.text(1, 1.7, "0\ncorrect", ha="center", fontsize=9.5, color=GREEN, fontweight="bold")
+    ax.set_title("Shared-state safety (stock Redis)", fontsize=9.5)
     ax.grid(True, axis="y", ls=":", lw=0.5, color="#cfd5e0")
-    # right: detector keeps overlap vs lock serializes
+    # right: detector vs coarse lock throughput (real Redis, two contention levels)
     ax = axes[1]
-    cont = ["low", "high"]
-    detector = [1.0, 1.0]; lock = [0.92, 1/30.]
+    det = [24.69, 23.94]; lock = [13.81, 14.24]
     x = np.arange(2); w=0.36
-    ax.bar(x-w/2, detector, w, color=SLATE, ec=INK, lw=1.0, label="detector (overlapped)")
+    ax.bar(x-w/2, det,  w, color=SLATE, ec=INK, lw=1.0, label="detector (overlapped)")
     ax.bar(x+w/2, lock, w, color=AMBER, ec=INK, lw=1.0, label="lock (serialized)")
-    ax.set_yscale("log"); ax.set_ylim(0.02, 1.8)
-    ax.set_xticks(x); ax.set_xticklabels(["low\ncontention","high\ncontention"])
-    ax.set_ylabel("relative throughput")
-    ax.text(1, 1.05, "4–67×", ha="center", fontsize=10, color=SLATE, fontweight="bold")
-    ax.legend(fontsize=8, loc="lower left", frameon=True)
-    ax.set_title("Detector keeps offloads overlapped", fontsize=10.5)
+    ax.set_ylim(0, 30)
+    ax.set_xticks(x); ax.set_xticklabels(["high\ncontention","low\ncontention"])
+    ax.set_ylabel("throughput  (K req/s)")
+    ax.text(0, 25.7, "1.8×", ha="center", fontsize=10, color=SLATE, fontweight="bold")
+    ax.text(1, 24.9, "1.7×", ha="center", fontsize=10, color=SLATE, fontweight="bold")
+    ax.legend(fontsize=7.6, loc="upper right", frameon=True)
+    ax.set_title("Detector keeps offloads overlapped", fontsize=9.5)
     ax.grid(True, axis="y", ls=":", lw=0.5, color="#cfd5e0")
     save(fig, "fig_correctness")
 

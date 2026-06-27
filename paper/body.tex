@@ -63,8 +63,8 @@ only has to route the offload through it. We instantiate this recipe on \textbf{
 servers spanning every concurrency model---Redis, nginx, memcached, Node.js, Python/asyncio, Apache,
 Go, PostgreSQL, MariaDB, and HAProxy---and in each case the change is \textbf{18 to 112 lines added,
 and zero or one existing line modified}. Measured on real hardware throughout---no emulated
-latencies---the edit yields up to $3.5\times$ on a real-GPU offload, with no failed
-requests, and the speedup is ultimately bounded by the accelerator's own throughput
+latencies---the edit recovers $2$--$5\times$ with no failed requests, bounded at both ends by the
+accelerator's throughput and by how much concurrency the server can itself express
 (\S\ref{sec:eval}).
 
 Behind these numbers is a simple predictive model, and extracting it is the paper's main
@@ -108,9 +108,10 @@ In summary, this paper makes the following contributions:
     whether a binary is fiberizable (\S\ref{sec:transparent}).
   \item \textbf{A minimal-edit recipe and a cross-landscape study}: one offload-overlap pattern on
     ten off-the-shelf servers with 18--112 lines added and 0--1 lines modified, evaluated on real
-    hardware---and the finding that the win is bounded by the accelerator's throughput, so a
-    compute-saturating GPU kernel yields a modest speedup while a latency-bound (remote) offload is
-    what overlap multiplies (\S\ref{sec:minimal}, \S\ref{sec:eval}).
+    hardware ($2$--$5\times$)---and the finding that the win is bounded at both ends, by the
+    accelerator's throughput (a compute-saturating GPU kernel) and by the server's own overlap
+    capacity (a real latency-bound remote signer tops out at $3.5\times$ behind a GIL-bound executor)
+    (\S\ref{sec:minimal}, \S\ref{sec:eval}).
   \item \textbf{A transparent conflict detector} that keeps overlapped offload correct when it
     mutates shared state, with no application changes (\S\ref{sec:correctness}).
 \end{itemize}
@@ -443,10 +444,12 @@ many lines it will take.
 Overlap reorders work, and reordering is dangerous when the work touches shared state. If the
 post-processing after an offload performs a read-modify-write on a global---a request counter, a
 cache entry, a key in a store---then overlapping two requests can interleave their read-modify-write
-sequences and lose updates. In a deliberately hostile microbenchmark that increments a shared counter
-across the offload, unprotected overlap silently loses hundreds of thousands of updates and corrupts
-the result (Figure~\ref{fig:correctness}, left). The danger is subtle precisely because the offload
-makes the read-modify-write window long: the wider the latency overlap hides, the wider the race it
+sequences and lose updates. We make this concrete on a \emph{stock Redis server}: a module command
+reads a key, runs a real GPU offload, and writes the incremented value back, so the read-modify-write
+spans the offload. Driven by $30{,}000$ overlapped requests across a small key space, unprotected
+overlap silently loses $23{,}450$ updates and corrupts the result (Figure~\ref{fig:correctness},
+left). The danger is subtle precisely because the offload makes the read-modify-write window long:
+the wider the latency overlap hides, the wider the race it
 opens.
 
 Two mechanisms restore correctness without changing the application. First, \emph{per-connection
@@ -457,20 +460,23 @@ correct. Second, for state shared \emph{across} connections we provide a transpa
 when a fiber parks at its offload, and treats a write fault that lands on a page modified during the
 park as a conflict; under enforcement it holds a lightweight handler lock from the read to the write
 across the offload, so that only \emph{conflicting} handlers serialize while everyone else stays
-overlapped. On the hostile workload the detector catches every injected conflict and reduces lost
-updates to zero. Crucially, it preserves overlap where a lock would destroy it: under high contention
-a coarse lock serializes the offloads it is meant to protect, whereas the detector keeps
-non-conflicting offloads in flight and runs $4$--$67\times$ faster (Figure~\ref{fig:correctness},
-right). The detector is a property of the overlap mechanism, not of any one integration, so it
-applies equally to transparent fiberization and to the minimal-edit recipe.
+overlapped. On the stock-Redis workload the detector catches essentially every conflict ($26{,}185$
+flagged against $23{,}450$ lost) and, under enforcement, reduces lost updates to \emph{zero}.
+Crucially, it preserves overlap where a lock would destroy it: a coarse lock serializes the offloads
+it is meant to protect (13{,}812\,req/s), whereas the detector keeps non-conflicting offloads in
+flight ($24{,}691$\,req/s) and so runs $1.8\times$ faster while staying correct
+(Figure~\ref{fig:correctness}, right). The detector is a property of the overlap mechanism, not of
+any one integration, so it applies equally to transparent fiberization and to the minimal-edit
+recipe.
 
 \begin{figure}[t]
   \centering
   \includegraphics[width=\linewidth]{figs/fig_correctness.pdf}
-  \caption{Keeping overlapped stateful offloads correct. Left: unprotected overlap of a shared
-    read-modify-write loses $289$K updates; the transparent page-protection detector reduces this to
-    zero. Right: under high contention a coarse lock serializes the very offloads it protects, while
-    the detector keeps non-conflicting offloads overlapped and runs $4$--$67\times$ faster.}
+  \caption{Keeping overlapped stateful offloads correct, measured on a stock Redis server with a real
+    GPU offload. Left: unprotected overlap of a shared read-modify-write loses $23{,}450$ updates; the
+    page-protection detector flags $26{,}185$ conflicts and, under enforcement, reduces lost updates
+    to zero. Right: a coarse lock serializes the very offloads it protects ($13.8$K\,req/s), while the
+    detector keeps non-conflicting offloads overlapped ($24.7$K\,req/s), $1.8\times$ faster.}
   \label{fig:correctness}
 \end{figure}
 
@@ -535,12 +541,16 @@ and grows to $3.8\times$ at $1.45$\,ms. Crucially, the ceiling is a property of 
 not the server: a compute-heavy GPU kernel \emph{saturates} the GPU, so concurrent offloads
 serialize on the accelerator rather than overlapping. Overlap then recovers the GPU
 \emph{utilization} that blocking wastes---the async path keeps the device busy while the synchronous
-one idles it between requests---but it cannot exceed the device's throughput. The large multipliers
-overlap can in principle deliver therefore require a \emph{latency-bound} offload whose device is
-not saturated---a remote signer, a key-encapsulation, or an inference service, many of which can be
-in flight at once---rather than a single compute-bound accelerator. For this regime we build a real
-remote signer over TCP (a genuine RSA-2048 signature per request), whose latency is round-trip-bound
-so many requests can be in flight at once.
+one idles it between requests---but it cannot exceed the device's throughput. A \emph{latency-bound}
+offload---whose device is not saturated, so many requests can be in flight at once---lifts that
+device ceiling: we build a real remote signer over TCP (a genuine RSA-2048 signature per request,
+$821$\,\textmu s round-trip) and the same Python server reaches $3.53\times$ ($2038\to7202$\,req/s).
+Notably this is \emph{not} the order-of-magnitude win a deep device queue could in principle give:
+the bottleneck has simply moved from the device to the \emph{server's own overlap capacity}---the
+\texttt{asyncio} executor keeps only $\sim$$7$ requests genuinely in flight under the GIL. Real
+overlap on a stock server is thus bounded at both ends, by the accelerator's throughput \emph{and}
+by how much concurrency the server can actually express; across our servers and offloads it lands at
+$2$--$5\times$ (and $17.3\times$ only for the purpose-built transparent fiber runtime).
 
 \paragraph{Databases on a real GPU.}
 A process- or thread-per-connection database (PostgreSQL, MariaDB) already overlaps offloads
@@ -682,10 +692,12 @@ make that happen, and the answer is a spectrum from zero lines to about a hundre
 end, a transparent runtime overlaps an unmodified thread-per-connection binary---but it reaches a
 narrow niche and hits three architectural walls, and it cannot help the event-driven servers that
 have the most to gain. A few lines at the offload site, routed through a server's own concurrency
-mechanism, work everywhere; measured on real hardware they recover up to $3.5\times$ on a real-GPU
-offload across ten production servers, and---because the win is ultimately bounded by the
-accelerator's own throughput---it is a \emph{latency-bound} offload, such as a remote signer, that
-overlap multiplies, not a single compute-saturating device. A simple
+mechanism, work everywhere; measured on real hardware they recover $2$--$5\times$ across ten
+production servers. The win is bounded at both ends---by the accelerator's own throughput (a
+compute-saturating GPU kernel) and by the server's own overlap capacity (even a real latency-bound
+remote signer tops out at $3.5\times$ behind a GIL-bound executor)---so the order-of-magnitude wins
+an unbounded offload model predicts do not survive real hardware, except in the purpose-built
+transparent runtime ($17.3\times$). A simple
 model---concurrency model crossed with offload weight---predicts both the speedup and the code cost in
 advance, and a transparent conflict detector, validated on a stock Redis server, keeps the overlap
 correct when it touches shared state. The result is a practical recipe, and a map, for hiding

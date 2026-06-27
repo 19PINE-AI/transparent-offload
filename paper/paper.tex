@@ -87,11 +87,13 @@ extreme, a \emph{few lines} injected at the offload site overlap it through the 
 concurrency, and this works everywhere. Across ten production servers---Redis, nginx, memcached,
 Node.js, Python/asyncio, Apache, Go, PostgreSQL, MariaDB, and HAProxy---the change is
 \textbf{18--112 lines added and 0--1 lines modified}. Measuring on real hardware only---no emulated
-latencies---the few-line edit yields \textbf{up to $3.5\times$} on a real-GPU offload and
-the zero-edit runtime reaches $17.3\times$, and we find the achievable speedup is bounded by the
-\emph{accelerator's own throughput}: a compute-heavy GPU kernel saturates the device, so overlap
-recovers its utilization rather than multiplying it, while the large multipliers require a
-\emph{latency-bound} offload, such as a remote signer, whose device is not saturated. A simple model
+latencies---real overlap lands at \textbf{$2$--$5\times$} on stock servers (and $17.3\times$ for the
+purpose-built transparent runtime), and we find it is bounded at \emph{both} ends: by the
+accelerator's own throughput (a compute-heavy GPU kernel saturates the device, so overlap recovers
+its utilization rather than multiplying it) and by the server's own overlap capacity (a real
+latency-bound remote signer lifts the device ceiling but then hits the \texttt{asyncio}/GIL executor
+at $3.5\times$). The dramatic order-of-magnitude wins that an unbounded offload model would predict
+do not survive contact with real hardware. A simple model
 predicts both the speedup and the code cost from two properties: the server's concurrency model and
 the offload weight relative to per-request work. When the overlapped offload touches shared state, a
 transparent page-protection conflict detector preserves correctness, which we validate on a stock
