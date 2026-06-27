@@ -14,7 +14,7 @@
 set -u
 HERE=$(cd "$(dirname "$0")" && pwd)
 ROOT=/home/ubuntu/transparent-offload/transparent-runtime
-LIB=$ROOT/libaccel_gpu_heavy.so
+LIB=${LIB:-$ROOT/libaccel_gpu_heavy.so}
 PORT=${PORT:-6790}
 N=${N:-30000}; C=${C:-50}
 GEMM_N=${GEMM_N:-1024}; ITERS=${ITERS:-1}; WORKERS=${WORKERS:-64}
