@@ -104,3 +104,4 @@ transparent-runtime/apps/nginx-run/*_temp/
 *.crt
 *.key
 *.csr
+/transparent-runtime/gemm_calib
