@@ -29,5 +29,21 @@ if wait_port 7795; then
   s=$(rps http://127.0.0.1:7795/ 1); a=$(rps http://127.0.0.1:7795/ 64)
   awk -v s="$s" -v a="$a" 'BEGIN{printf "go,goroutine-pool,real-GPU-AES,%s,%s,%.2f\n",s,a,(s+0>0)?a/s:0}' | tee -a "$OUT"
 fi
-pkill -f go_accel/go_accel 2>/dev/null
+pkill -f go_accel/go_accel 2>/dev/null; sleep 0.5
+
+# ---- HAProxy (proxy): SPOE + real-GPU agent; serial(1 worker) vs overlapping(64) ----
+HAP=$(command -v haproxy || echo /usr/sbin/haproxy)
+HCFG=$ROOT/apps/haproxy_accel/haproxy_spoe.cfg
+hrun(){  # $1 = agent workers -> echoes HAProxy rps through the SPOE offload
+  pkill -f spoa_agent.py 2>/dev/null; pkill -f "haproxy_spoe.cfg" 2>/dev/null; sleep 0.7
+  ACCEL_LIB=$LIB SPOA_WORKERS=$1 taskset -c 2-5 python3 "$ROOT/apps/haproxy_accel/spoa_agent.py" </dev/null >/tmp/spoa_$1.log 2>&1 &
+  wait_port 9002 || { echo ""; return; }
+  taskset -c 6-9 "$HAP" -f "$HCFG" </dev/null >/tmp/haproxy_$1.log 2>&1 &
+  wait_port 7810 || { echo ""; return; }
+  rps http://127.0.0.1:7810/ 64
+  pkill -f spoa_agent.py 2>/dev/null; pkill -f "haproxy_spoe.cfg" 2>/dev/null; sleep 0.5
+}
+hs=$(hrun 1); ha=$(hrun 64)
+awk -v s="$hs" -v a="$ha" 'BEGIN{printf "haproxy,proxy,real-GPU-AES,%s,%s,%.2f\n",s,a,(s+0>0)?a/s:0}' | tee -a "$OUT"
+
 echo "=== app_gpu_results.csv ==="; cat "$OUT"

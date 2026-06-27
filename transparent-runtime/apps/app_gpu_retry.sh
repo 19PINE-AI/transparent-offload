@@ -8,7 +8,7 @@ LOG=$ROOT/apps/app_gpu_run.log
 echo "$(date '+%F %T') app-GPU retry start" > "$LOG"
 for t in $(seq 1 200); do
   sleep 90
-  if [ -s "$CSV" ] && [ "$(wc -l < "$CSV")" -ge 3 ]; then
+  if [ -s "$CSV" ] && [ "$(wc -l < "$CSV")" -ge 4 ]; then
     echo "$(date '+%F %T') SUCCESS at window $t" >> "$LOG"; cat "$CSV" >> "$LOG"; break
   fi
   if ! pgrep -f app_gpu_sweep.sh >/dev/null 2>&1; then
