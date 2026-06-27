@@ -6,9 +6,17 @@ ROOT=/home/ubuntu/transparent-offload/transparent-runtime
 LIB=$ROOT/libaccel_gpu.so
 PYSITE=$(python3 -c 'import site;print(site.getusersitepackages())')
 OUT=$ROOT/apps/aes_blocksize_py_results.csv
-SIZES="4096 16384 65536 262144 524288 1048576 2097152"
+SIZES="${SIZES:-4096 16384 65536 262144 1048576 2097152 4194304 8388608}"
 rps(){ taskset -c 4 ab -k -c 50 -t 5 -n 100000000 "$1" 2>/dev/null | awk '/Requests per second/{print $4}'; }
 wp(){ for i in $(seq 1 80); do (echo >"/dev/tcp/127.0.0.1/$1") 2>/dev/null && return 0; sleep 0.2; done; return 1; }
+cat > /tmp/aeslat.c <<'EOF'
+#include <stdio.h>
+#include <time.h>
+extern void accel_encrypt(unsigned char*,int);
+static double now(){struct timespec t;clock_gettime(CLOCK_MONOTONIC,&t);return t.tv_sec*1e6+t.tv_nsec/1e3;}
+int main(){unsigned char b[4096]={0};accel_encrypt(b,4096);int R=150;double t0=now();
+for(int i=0;i<R;i++)accel_encrypt(b,4096);printf("%.1f\n",(now()-t0)/R);return 0;}
+EOF
 gcc -O2 -o /tmp/aeslat /tmp/aeslat.c -L"$ROOT" -laccel_gpu -Wl,-rpath,"$ROOT" 2>/dev/null
 echo "block_bytes,gpu_lat_us,sync_rps,async_rps,speedup" > "$OUT"
 for SZ in $SIZES; do
