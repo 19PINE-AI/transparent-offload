@@ -1,4 +1,5 @@
 app,class,offload,baseline_rps,overlap_rps,speedup
-nodejs,single-event-loop,real-GPU-AES,1099.60,3598.91,3.27
-go,goroutine-pool,real-GPU-AES,5779.99,47862.39,8.28
-haproxy,proxy,real-GPU-AES,5437.57,5204.15,0.96
+nodejs,single-event-loop,real-GPU-AES-1MB,1412.69,3587.25,2.54
+go,goroutine-pool,real-GPU-AES-1MB,7587.83,22802.18,3.01
+apache,thread-pool,real-GPU-AES-1MB,5973.96,20603.71,3.45
+haproxy,proxy,real-GPU-AES-1MB,6641.91,6132.34,0.92
