@@ -411,24 +411,24 @@ modifies an existing line.
 \paragraph{Offload weight predicts whether overlap helps at all.}
 The second axis is independent of the server (Figure~\ref{fig:weight}). Overlap reclaims the time
 spent waiting for the offload; if the per-request CPU work is already comparable to the offload, there
-is little to reclaim. Sweeping a \emph{real} GPU offload's latency on a single-event-loop server, a
-\emph{light} offload (tens of microseconds, on the order of the runtime's own per-request overhead)
-yields essentially no speedup ($1.2\times$ at $11$\,\textmu s), and the speedup grows with offload
-weight to $3.8\times$ at $1.45$\,ms---where it is capped not by the server but by the GPU's own
-throughput, since a compute-heavy kernel saturates the device (\S\ref{sec:eval}). The rule is simple
-and it bounds applicability: overlap pays exactly when the offload outweighs the per-request CPU work
+is little to reclaim. Sweeping a \emph{real} GPU AES offload by block size on a single-event-loop
+server, a \emph{light} block ($4$\,KiB, $46$\,\textmu s---on the order of the runtime's own
+per-request overhead) yields essentially no speedup ($1.24\times$), and the speedup grows
+monotonically with offload weight to $5.41\times$ at $8$\,MiB ($2.3$\,ms), where it approaches the
+GPU's bandwidth (full per-size values in Appendix~\ref{app:blocksize}). The rule is simple and it
+bounds applicability: overlap pays exactly when the offload outweighs the per-request CPU work
 \emph{and} the accelerator is not already saturated. It also explains Wall~3 of
 \S\ref{sec:transparent}, which is the same condition seen from the transparent side.
 
 \begin{figure}[t]
   \centering
   \includegraphics[width=0.86\linewidth]{figs/fig_weight.pdf}
-  \caption{The predictive model, part two (measured, real GPU): overlap pays only when the offload
-    outweighs per-request CPU work. Sweeping a real cuBLAS-\textsc{gemm} offload from $11$\,\textmu s
-    to $1.45$\,ms on a single-event-loop server, the same edit gives no benefit for a light offload
-    ($1.2\times$) and rises to $3.8\times$ for a heavy one---capped there by the GPU's throughput, as
-    a compute-bound kernel saturates the device. This condition also explains the transparent
-    runtime's third wall.}
+  \caption{The predictive model, part two (measured, real GPU, idle): overlap pays only when the
+    offload outweighs per-request CPU work. Sweeping a real GPU AES offload by block size
+    (consecutive powers of two, $4$\,KiB--$8$\,MiB) on a single-event-loop server, the same edit gives
+    no benefit for a light block ($1.24\times$ at $4$\,KiB, $46$\,\textmu s) and rises to $5.41\times$
+    at $8$\,MiB ($2.3$\,ms), approaching the GPU's bandwidth. Right axis: measured single-op GPU
+    latency. This condition also explains the transparent runtime's third wall.}
   \label{fig:weight}
 \end{figure}
 
@@ -487,10 +487,10 @@ recipe.
 
 \paragraph{Setup.}
 All offloads are real, run on real hardware---no emulated latencies. Experiments run on a server with
-an NVIDIA RTX PRO 6000 (Blackwell) GPU; the GPU-offload path performs either AES~\cite{openssl} (a
-light, launch-bound kernel) or a cuBLAS \textsc{gemm} (a compute-heavy kernel that reaches the
-millisecond regime), each on its own CUDA stream with completion polled by
-\texttt{cudaEventQuery}~\cite{cudastreams}. For the latency-bound, \emph{remote} offload class (HSM
+an NVIDIA RTX PRO 6000 (Blackwell) GPU; the GPU-offload path performs AES~\cite{openssl} on its own
+CUDA stream with completion polled by \texttt{cudaEventQuery}~\cite{cudastreams}, with the block size
+sweeping from $4$\,KiB (light, launch-bound) to $8$\,MiB (heavy, bandwidth-bound at $\sim$$2.3$\,ms).
+For the latency-bound, \emph{remote} offload class (HSM
 signatures, post-quantum KEMs, remote inference) we stand up a real remote signer over TCP that
 performs a genuine RSA-2048 signature per request (\S\ref{sec:correctness}). We drive the
 event-driven servers with standard load generators (\texttt{redis-benchmark}, \texttt{ab}). The
@@ -533,15 +533,15 @@ operating point that matters for a latency-sensitive service.
 \end{figure}
 
 \paragraph{Offload weight on a real GPU.}
-Sweeping the real GPU offload's latency---by sizing a cuBLAS \textsc{gemm}, the core of DNN
-inference, from $11$\,\textmu s to $1.45$\,ms---shows the predicted weight dependence on a
-single-event-loop server (Figure~\ref{fig:weight}). The async fix yields essentially no benefit for
-a light offload ($1.2\times$ at $11$\,\textmu s, on the order of the server's per-request overhead)
-and grows to $3.8\times$ at $1.45$\,ms. Crucially, the ceiling is a property of the \emph{device},
-not the server: a compute-heavy GPU kernel \emph{saturates} the GPU, so concurrent offloads
-serialize on the accelerator rather than overlapping. Overlap then recovers the GPU
-\emph{utilization} that blocking wastes---the async path keeps the device busy while the synchronous
-one idles it between requests---but it cannot exceed the device's throughput. A \emph{latency-bound}
+Sweeping the real GPU AES offload by block size (consecutive powers of two, $4$\,KiB to $8$\,MiB,
+realistic bulk crypto) shows the predicted weight dependence on a single-event-loop server
+(Figure~\ref{fig:weight}; full values in Appendix~\ref{app:blocksize}). The async fix yields
+essentially no benefit for a light block ($1.24\times$ at $4$\,KiB, $46$\,\textmu s, on the order of
+the server's per-request overhead) and grows monotonically to $5.41\times$ at $8$\,MiB
+($2.3$\,ms). The ceiling is a property of the \emph{device}: as the block grows the async path drives
+the GPU toward its memory bandwidth, so overlap recovers the device \emph{utilization} that blocking
+wastes---keeping the GPU busy while the synchronous path idles it between requests---but it cannot
+exceed the device's throughput (a compute-bound kernel saturates even sooner). A \emph{latency-bound}
 offload---whose device is not saturated, so many requests can be in flight at once---lifts that
 device ceiling: we build a real remote signer over TCP (a genuine RSA-2048 signature per request,
 $821$\,\textmu s round-trip) and the same Python server reaches $3.53\times$ ($2038\to7202$\,req/s).
@@ -709,9 +709,9 @@ fine-grained accelerator-offload latency in the servers that run online services
 \section{AES Block-Size Sweep (detailed values)}
 \label{app:blocksize}
 
-Table~\ref{tab:blocksize} and Figure~\ref{fig:blocksize} give the full per-size measurements behind
-the offload-weight claim, all on a real GPU on an \emph{idle} device (no co-tenant compute), driving
-a single-event-loop server (Python \texttt{asyncio} with a $32$-thread executor) at $50$ concurrent
+Table~\ref{tab:blocksize} gives the full per-size measurements behind the offload-weight curve of
+Figure~\ref{fig:weight}, all on a real GPU on an \emph{idle} device (no co-tenant compute), driving a
+single-event-loop server (Python \texttt{asyncio} with a $32$-thread executor) at $50$ concurrent
 clients. The AES block size is swept over consecutive powers of two from $4$\,KiB to $8$\,MiB; for
 each we report the measured single-op GPU latency (one offload in flight), the synchronous and
 asynchronous throughput, and their ratio. The speedup grows monotonically from $1.24\times$ at
@@ -744,11 +744,3 @@ to the GPU's throughput ceiling.
     \texttt{transparent-runtime/apps/aes\_blocksize\_py\_results.csv}.}
   \label{tab:blocksize}
 \end{table}
-
-\begin{figure}[h]
-  \centering
-  \includegraphics[width=0.86\linewidth]{figs/fig_blocksize.pdf}
-  \caption{The same data: real-GPU AES speedup (left axis) and measured single-op GPU latency (right
-    axis) versus AES block size, consecutive powers of two from $4$\,KiB to $8$\,MiB.}
-  \label{fig:blocksize}
-\end{figure}

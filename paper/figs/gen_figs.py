@@ -257,28 +257,26 @@ def fig_walls():
 # Fig 7 — overlap pays only when the offload outweighs per-request work
 # =====================================================================
 def fig_weight():
-    # MEASURED, real GPU: cuBLAS-GEMM offload latency (gemm_calib.csv) vs sync->async
-    # speedup on the single-event-loop Python server (weight_sweep_gpu.csv).
-    lat = [11.3, 25.5, 30.9, 37.3, 106.9, 212.6, 689.4, 1450.6]   # us, real GPU
-    spd = [1.22, 1.29, 1.48, 1.45, 2.41,  3.02,  3.47,  3.82]      # async/sync
-    fig, ax = plt.subplots(figsize=(6.4, 3.3))
-    ax.plot(lat, spd, "-o", color=TEAL, lw=2.3, ms=7, label="Python (real GPU GEMM)")
-    ax.set_xscale("log"); ax.set_yscale("log")
-    ax.set_xlim(9, 1800); ax.set_ylim(0.9, 6)
-    ax.set_xlabel("real GPU offload latency  (µs, log)")
-    ax.set_ylabel("speedup  (×, log)")
+    # MEASURED (idle GPU): real GPU AES block-size sweep on the single-event-loop
+    # Python server (apps/aes_blocksize_py_results.csv). Block size = offload weight.
+    kb  = [4,8,16,32,64,128,256,512,1024,2048,4096,8192]
+    lat = [46.4,47.0,51.4,60.3,70.2,92.7,126.5,191.8,361.6,653.6,1188.1,2258.6]
+    spd = [1.24,1.26,1.25,1.25,1.31,1.42,1.53,1.83,2.37,2.96,3.83,5.41]
+    fig, ax = plt.subplots(figsize=(6.6, 3.4))
+    ax.plot(kb, spd, "-o", color=TEAL, lw=2.3, ms=6, label="speedup (async/sync)")
+    ax.set_xscale("log", base=2); ax.set_ylim(1.0, 5.9)
+    ax.set_xlabel("AES block size (offload weight)")
+    ax.set_ylabel("speedup  (×)", color=TEAL)
     ax.axhline(1.0, color="#999", ls="--", lw=1.0)
-    ax.text(10, 1.02, "no benefit", fontsize=8, color="#777", va="bottom")
-    # the device-throughput ceiling: a compute-heavy kernel saturates the GPU
-    ax.axhspan(3.82, 6, color="#f3d9d3", alpha=0.55, zorder=0)
-    ax.annotate("GPU throughput ceiling\n(compute-bound kernel\nsaturates the device)",
-                xy=(900, 3.82), xytext=(40, 4.6), ha="center", fontsize=7.8, color=RED,
-                arrowprops=dict(arrowstyle="-", color=RED, lw=0.8))
-    ax.set_xticks([11,38,100,1000]); ax.set_xticklabels(["11","38","100","1450\n(1.45 ms)"])
-    ax.set_yticks([1,2,3,4]); ax.set_yticklabels(["1","2","3","4"])
-    ax.legend(fontsize=9, loc="upper left", frameon=True)
-    ax.grid(True, which="both", ls=":", lw=0.6, color="#cfd5e0")
-    ax.set_title("Overlap pays with offload weight — but is capped by GPU throughput", loc="left", fontsize=10)
+    ax.text(4, 1.04, "no benefit (offload $\\approx$ per-request work)", fontsize=7.6, color="#777", va="bottom")
+    ax.set_xticks(kb); ax.set_xticklabels(["4K","8K","16K","32K","64K","128K","256K","512K","1M","2M","4M","8M"], fontsize=7.5)
+    ax2 = ax.twinx()                                   # real single-op GPU latency
+    ax2.plot(kb, lat, "-s", color=AMBER, lw=1.8, ms=5, label="GPU latency")
+    ax2.set_yscale("log"); ax2.set_ylabel("single-op GPU latency  (µs)", color=AMBER)
+    ax.grid(True, which="both", ls=":", lw=0.5, color="#cfd5e0")
+    ax.set_title("Overlap pays with offload weight (real GPU AES, single event loop)", loc="left", fontsize=10)
+    ax.legend(loc="upper left", fontsize=8.5, frameon=True)
+    ax2.legend(loc="lower right", fontsize=8.5, frameon=True)
     save(fig, "fig_weight")
 
 
@@ -560,5 +558,5 @@ def fig_blocksize():
 if __name__ == "__main__":
     fig_pipeline(); fig_spectrum(); fig_eventloop(); fig_regimes(); fig_runtime()
     fig_walls(); fig_weight(); fig_correctness(); fig_dbpipeline(); fig_proxy(); fig_classifier()
-    fig_recipe(); fig_condsweep(); fig_landscape(); fig_latency(); fig_positioning(); fig_blocksize()
+    fig_recipe(); fig_condsweep(); fig_landscape(); fig_latency(); fig_positioning()
     print("ALL FIGURES DONE")
