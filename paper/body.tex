@@ -63,7 +63,7 @@ only has to route the offload through it. We instantiate this recipe on \textbf{
 servers spanning every concurrency model---Redis, nginx, memcached, Node.js, Python/asyncio, Apache,
 Go, PostgreSQL, MariaDB, and HAProxy---and in each case the change is \textbf{18 to 112 lines added,
 and zero or one existing line modified}. Measured on real hardware throughout---no emulated
-latencies---the edit recovers $2$--$5\times$ with no failed requests, bounded at both ends by the
+latencies---the edit recovers $1.2$--$5\times$ with no failed requests, bounded at both ends by the
 accelerator's throughput and by how much concurrency the server can itself express
 (\S\ref{sec:eval}).
 
@@ -108,7 +108,7 @@ In summary, this paper makes the following contributions:
     whether a binary is fiberizable (\S\ref{sec:transparent}).
   \item \textbf{A minimal-edit recipe and a cross-landscape study}: one offload-overlap pattern on
     ten off-the-shelf servers with 18--112 lines added and 0--1 lines modified, evaluated on real
-    hardware ($2$--$5\times$)---and the finding that the win is bounded at both ends, by the
+    hardware ($1.2$--$5\times$)---and the finding that the win is bounded at both ends, by the
     accelerator's throughput (a large GPU offload saturates the device's bandwidth) and by the
     server's own overlap capacity (a real latency-bound remote signer tops out at $3.5\times$ behind a
     GIL-bound executor)
@@ -153,9 +153,10 @@ group servers into a few models, which recur throughout the paper. A \emph{singl
 (e.g., Redis, Node.js, a Python \texttt{asyncio} service) multiplexes all connections on one thread
 that loops over ready events; an \emph{event-loop-with-pool} server (nginx, memcached) runs a few
 such loops plus a worker pool for blocking work; a \emph{thread- or goroutine-pool} server (Apache,
-Go) dispatches each request to a pooled worker or a runtime-scheduled task; and a
-\emph{process- or thread-per-connection} server (PostgreSQL, MariaDB) gives each connection its own
-backend. These models differ sharply in what a synchronous offload \emph{costs} and in how overlap
+Go) dispatches each request to a pooled worker or a runtime-scheduled task; a \emph{proxy} (HAProxy)
+forwards each request through a native offload engine rather than running application logic itself;
+and a \emph{process- or thread-per-connection} server (PostgreSQL, MariaDB) gives each connection its
+own backend. These models differ sharply in what a synchronous offload \emph{costs} and in how overlap
 must be injected---differences this paper turns into a predictive model (\S\ref{sec:taxonomy}).
 
 \paragraph{The motivating catastrophe.}
@@ -333,7 +334,7 @@ it. The recipe is uniform across servers:
 We distinguish two quantities: \emph{lines added} (the new integration code) and \emph{existing lines
 modified} (edits to code already in the server). The second is the invasive, maintenance-costly part;
 zero is ideal and is achievable wherever the server exposes a plugin or extension interface. We
-instantiate the recipe on ten servers, one per concurrency model, and in every case the change is
+instantiate the recipe on ten servers spanning every concurrency model, and in every case the change is
 \textbf{18--112 lines added and 0--1 lines modified} (Figure~\ref{fig:spectrum}).
 
 \begin{figure}[t]
@@ -551,7 +552,7 @@ the bottleneck has simply moved from the device to the \emph{server's own overla
 \texttt{asyncio} executor keeps only $\sim$$7$ requests genuinely in flight under the GIL. Real
 overlap on a stock server is thus bounded at both ends, by the accelerator's throughput \emph{and}
 by how much concurrency the server can actually express; across our servers and offloads it lands at
-$2$--$5\times$ (and $17.3\times$ only for the purpose-built transparent fiber runtime).
+$1.2$--$5\times$ (and $17.3\times$ only for the purpose-built transparent fiber runtime).
 
 \paragraph{Databases on a real GPU.}
 A process- or thread-per-connection database (PostgreSQL, MariaDB) already overlaps offloads
@@ -693,7 +694,7 @@ make that happen, and the answer is a spectrum from zero lines to about a hundre
 end, a transparent runtime overlaps an unmodified thread-per-connection binary---but it reaches a
 narrow niche and hits three architectural walls, and it cannot help the event-driven servers that
 have the most to gain. A few lines at the offload site, routed through a server's own concurrency
-mechanism, work everywhere; measured on real hardware they recover $2$--$5\times$ across ten
+mechanism, work everywhere; measured on real hardware they recover $1.2$--$5\times$ across ten
 production servers. The win is bounded at both ends---by the accelerator's own throughput (a large
 GPU offload saturates the device's bandwidth) and by the server's own overlap capacity (even a real latency-bound
 remote signer tops out at $3.5\times$ behind a GIL-bound executor)---so the order-of-magnitude wins

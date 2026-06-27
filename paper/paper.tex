@@ -87,7 +87,7 @@ extreme, a \emph{few lines} injected at the offload site overlap it through the 
 concurrency, and this works everywhere. Across ten production servers---Redis, nginx, memcached,
 Node.js, Python/asyncio, Apache, Go, PostgreSQL, MariaDB, and HAProxy---the change is
 \textbf{18--112 lines added and 0--1 lines modified}. Measuring on real hardware only---no emulated
-latencies---real overlap lands at \textbf{$2$--$5\times$} on stock servers (and $17.3\times$ for the
+latencies---real overlap lands at \textbf{$1.2$--$5\times$} on stock servers (and $17.3\times$ for the
 purpose-built transparent runtime), and we find it is bounded at \emph{both} ends: by the
 accelerator's own throughput (a large GPU offload saturates the device's memory bandwidth, so overlap
 recovers its utilization rather than multiplying it) and by the server's own overlap capacity (a real
