@@ -105,3 +105,4 @@ transparent-runtime/apps/nginx-run/*_temp/
 *.key
 *.csr
 /transparent-runtime/gemm_calib
+/transparent-runtime/remote_hsm
