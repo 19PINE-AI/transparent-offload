@@ -9,7 +9,8 @@ CSV=$ROOT/remote_hsm_results.csv
 LOG=$ROOT/remote_hsm_run.log
 rm -f "$CSV"
 echo "$(date '+%F %T') retry loop start (trivial body, detached attempts)" > "$LOG"
-for t in $(seq 1 80); do                       # up to ~80 * 90s ~ 2 h of opportunistic tries
+for t in $(seq 1 200); do                      # patient: up to ~200 * 90s ~ 5 h
+  sleep 90                                      # sleep FIRST so we never launch into the active burst
   if [ -s "$CSV" ] && [ "$(wc -l < "$CSV")" -ge 2 ]; then
     echo "$(date '+%F %T') SUCCESS on attempt window $t" >> "$LOG"; cat "$CSV" >> "$LOG"; break
   fi
@@ -17,6 +18,5 @@ for t in $(seq 1 80); do                       # up to ~80 * 90s ~ 2 h of opport
     echo "$(date '+%F %T') spawn attempt $t" >> "$LOG"
     setsid nohup bash "$ROOT/remote_hsm_sweep.sh" </dev/null >> "$LOG" 2>&1 &
   fi
-  sleep 90
 done
 echo "$(date '+%F %T') retry loop done" >> "$LOG"
