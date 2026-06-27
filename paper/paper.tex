@@ -87,11 +87,11 @@ extreme, a \emph{few lines} injected at the offload site overlap it through the 
 concurrency, and this works everywhere. Across ten production servers---Redis, nginx, memcached,
 Node.js, Python/asyncio, Apache, Go, PostgreSQL, MariaDB, and HAProxy---the change is
 \textbf{18--112 lines added and 0--1 lines modified}. Measuring on real hardware only---no emulated
-latencies---the few-line edit yields \textbf{up to $8.3\times$} on a real-GPU offload and
+latencies---the few-line edit yields \textbf{up to $3.5\times$} on a real-GPU offload and
 the zero-edit runtime reaches $17.3\times$, and we find the achievable speedup is bounded by the
 \emph{accelerator's own throughput}: a compute-heavy GPU kernel saturates the device, so overlap
 recovers its utilization rather than multiplying it, while the large multipliers require a
-\emph{latency-bound} offload---which we demonstrate with a real remote signer. A simple model
+\emph{latency-bound} offload, such as a remote signer, whose device is not saturated. A simple model
 predicts both the speedup and the code cost from two properties: the server's concurrency model and
 the offload weight relative to per-request work. When the overlapped offload touches shared state, a
 transparent page-protection conflict detector preserves correctness, which we validate on a stock

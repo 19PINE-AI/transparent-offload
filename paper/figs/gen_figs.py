@@ -109,16 +109,16 @@ def fig_spectrum():
     # REAL-hardware speedups only (real GPU). Servers whose dramatic numbers needed a
     # latency-bound offload are shown by line-count at the baseline (integration built;
     # measured at y=1 on the real-GPU AES path or pending a real remote offload).
-    pts = [   # (app, lines_added, speedup, regime_color, dx, dy, ha)
-        ("Redis", 83, 4.8, SLATE, -8, 7, "right"),
-        ("Python", 22, 3.8, SLATE, -8, 6, "right"),
-        ("Node.js", 33, 3.27, SLATE, 0, -16, "center"),
-        ("nginx", 112, 5.2, TEAL, -9, 5, "right"),
-        ("memcached", 70, 3.8, TEAL, 8, 4, "left"),
-        ("Go", 28, 8.28, GREEN, -8, 4, "right"),
+    pts = [   # (app, lines_added, speedup, regime_color, dx, dy, ha) -- real GPU, 1MB AES
+        ("Redis", 83, 3.01, SLATE, -8, 6, "right"),
+        ("Node.js", 33, 2.54, SLATE, 0, -16, "center"),
+        ("nginx", 112, 2.74, TEAL, 9, 3, "left"),
+        ("memcached", 70, 2.93, TEAL, 0, 9, "center"),
+        ("Go", 28, 3.01, GREEN, -8, 5, "right"),
+        ("Apache", 27, 3.45, GREEN, 0, 9, "center"),
         ("Postgres", 30, 1.28, AMBER, -9, -2, "right"),
         ("MariaDB", 34, 1.9, AMBER, 9, 2, "left"),
-        ("HAProxy", 18, 0.96, PURPLE, 0, 11, "center"),
+        ("HAProxy", 18, 0.92, PURPLE, 0, 11, "center"),
     ]
     fig, ax = plt.subplots(figsize=(6.6, 4.0))
     for (name, x, y, c, dx, dy, ha) in pts:

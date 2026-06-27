@@ -63,7 +63,7 @@ only has to route the offload through it. We instantiate this recipe on \textbf{
 servers spanning every concurrency model---Redis, nginx, memcached, Node.js, Python/asyncio, Apache,
 Go, PostgreSQL, MariaDB, and HAProxy---and in each case the change is \textbf{18 to 112 lines added,
 and zero or one existing line modified}. Measured on real hardware throughout---no emulated
-latencies---the edit yields up to $8.3\times$ on a real-GPU offload, with no failed
+latencies---the edit yields up to $3.5\times$ on a real-GPU offload, with no failed
 requests, and the speedup is ultimately bounded by the accelerator's own throughput
 (\S\ref{sec:eval}).
 
@@ -337,14 +337,15 @@ instantiate the recipe on ten servers, one per concurrency model, and in every c
 \begin{figure}[t]
   \centering
   \includegraphics[width=\linewidth]{figs/fig_spectrum.pdf}
-  \caption{The spectrum (the paper in one plot), all on a \emph{real GPU}. Each point is an
-    off-the-shelf server; the $x$-axis is the lines of integration code, the $y$-axis the real-GPU
-    speedup from overlapping the offload. The few-line edit recovers $3.3$--$8.3\times$ on a
-    real-GPU AES offload (least where the offload is light relative to per-request work---HAProxy's
-    proxy overhead, the databases' already-overlapped backends---most where a pool feeds the device,
-    Go's $8.3\times$ being concurrency scaling), and the zero-line transparent runtime reaches
-    $17.3\times$ in its niche (walls on third-party binaries). Color encodes the concurrency model,
-    which---together with the offload weight---predicts both axes (\S\ref{sec:taxonomy}).}
+  \caption{The spectrum (the paper in one plot), all on a \emph{real GPU} with a $1$\,MiB AES offload,
+    measured on an idle GPU. Each point is an off-the-shelf server; the $x$-axis is the lines of
+    integration code, the $y$-axis the real-GPU speedup from overlapping the offload. The few-line
+    edit clusters at $2.5$--$3.5\times$---a real bandwidth-bound GPU offload lets overlap fill the
+    device but not exceed its throughput---dropping below $1\times$ only where the offload is light
+    relative to per-request work (HAProxy's proxy protocol overhead; the databases' backends already
+    overlap across connections, leaving only intra-query pipelining). The zero-line transparent
+    runtime reaches $17.3\times$ in its niche on a small launch-bound offload (walls on third-party
+    binaries). Color encodes the concurrency model (\S\ref{sec:taxonomy}).}
   \label{fig:spectrum}
 \end{figure}
 
@@ -491,16 +492,18 @@ cross-server summary is Figure~\ref{fig:spectrum} and the code cost is in \S\ref
 
 \paragraph{Event-driven servers.}
 For a single event loop, a synchronous offload caps throughput at one request per offload latency,
-and the few-line async fix removes the cap. On the real-GPU path, where the AES offload is tens of
-microseconds, Redis gains $4.8\times$ and Node.js $3.27\times$, and the event-loop-with-pool servers
-nginx and memcached gain $5.2\times$ and $3.8\times$ from an edit of a few dozen lines, with no
-failed requests. A thread/goroutine pool overlaps the offload \emph{automatically}, with no
-asynchronous code: a Go server scales $8.3\times$ from one to many concurrent requests as the
-runtime runs other goroutines while one blocks in the \texttt{cgo} offload. A proxy is the boundary
+and the few-line async fix removes the cap. All numbers below use a real GPU AES offload on $1$\,MiB
+blocks---realistic bulk crypto (a proxy or server doing TLS on a large transfer)---measured on a
+genuinely idle GPU. The single-event-loop servers Redis and Node.js gain $3.0\times$ and $2.5\times$;
+the event-loop-with-pool servers nginx and memcached gain $2.7\times$ and $2.9\times$, from an edit of
+a few dozen lines with no failed requests. A thread/goroutine pool overlaps the offload
+\emph{automatically}, with no asynchronous code: Apache and a Go server gain $3.5\times$ and
+$3.0\times$ as the runtime runs other workers while one blocks in the offload. A proxy is the boundary
 case: HAProxy streaming each request through its SPOE engine to a real-GPU offload agent gains
-\emph{nothing} ($0.96\times$), because a $38$\,\textmu s GPU offload is smaller than the agent's
-per-request protocol overhead---there is no idle time to reclaim, exactly as the offload-weight rule
-predicts.
+\emph{nothing} ($0.9\times$), because even a $1$\,MiB GPU offload is comparable to the agent's
+per-request protocol overhead---little idle time to reclaim, as the offload-weight rule predicts. The
+speedups cluster at $2.5$--$3.5\times$ because a real GPU AES offload at this size is bandwidth-bound:
+overlap fills the device, but cannot exceed its throughput.
 
 \paragraph{Latency, not just throughput.}
 Overlap helps latency, not only peak throughput: by keeping the CPU busy during offloads rather
@@ -533,8 +536,9 @@ serialize on the accelerator rather than overlapping. Overlap then recovers the 
 one idles it between requests---but it cannot exceed the device's throughput. The large multipliers
 overlap can in principle deliver therefore require a \emph{latency-bound} offload whose device is
 not saturated---a remote signer, a key-encapsulation, or an inference service, many of which can be
-in flight at once---rather than a single compute-bound accelerator. We measure exactly this regime
-on the correctness path below with a real remote signer (\S\ref{sec:correctness}).
+in flight at once---rather than a single compute-bound accelerator. For this regime we build a real
+remote signer over TCP (a genuine RSA-2048 signature per request), whose latency is round-trip-bound
+so many requests can be in flight at once.
 
 \paragraph{Databases on a real GPU.}
 A process- or thread-per-connection database (PostgreSQL, MariaDB) already overlaps offloads
@@ -676,10 +680,10 @@ make that happen, and the answer is a spectrum from zero lines to about a hundre
 end, a transparent runtime overlaps an unmodified thread-per-connection binary---but it reaches a
 narrow niche and hits three architectural walls, and it cannot help the event-driven servers that
 have the most to gain. A few lines at the offload site, routed through a server's own concurrency
-mechanism, work everywhere; measured on real hardware they recover up to $8.3\times$ on a real-GPU
+mechanism, work everywhere; measured on real hardware they recover up to $3.5\times$ on a real-GPU
 offload across ten production servers, and---because the win is ultimately bounded by the
-accelerator's own throughput---it is a \emph{latency-bound} offload, such as the real remote signer
-we measure, that overlap multiplies, not a single compute-saturating device. A simple
+accelerator's own throughput---it is a \emph{latency-bound} offload, such as a remote signer, that
+overlap multiplies, not a single compute-saturating device. A simple
 model---concurrency model crossed with offload weight---predicts both the speedup and the code cost in
 advance, and a transparent conflict detector, validated on a stock Redis server, keeps the overlap
 correct when it touches shared state. The result is a practical recipe, and a map, for hiding
