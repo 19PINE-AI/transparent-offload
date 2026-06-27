@@ -10,7 +10,7 @@ ROOT=/home/ubuntu/transparent-offload/transparent-runtime
 PYSITE=$(python3 -c 'import site;print(site.getusersitepackages())')
 HPORT=${HPORT:-7900}
 OUT=$ROOT/remote_hsm_results.csv
-pkill -f remote_hsm 2>/dev/null; pkill -f py_accel/server.py 2>/dev/null; sleep 0.6
+pkill -x remote_hsm 2>/dev/null; pkill -f py_accel/server.py 2>/dev/null; sleep 0.6
 
 # real remote HSM on its own cores
 taskset -c 8-23 "$ROOT/remote_hsm" $HPORT >/tmp/hsm.log 2>&1 &
@@ -42,5 +42,5 @@ echo "server,offload,rpc_lat_us,sync_rps,async_rps,speedup" > "$OUT"
 awk -v L="$LAT" -v s="$s" -v a="$a" \
   'BEGIN{printf "python,real-remote-RSA2048,%s,%s,%s,%.2f\n",L,s,a,(s+0>0)?a/s:0}' | tee -a "$OUT"
 
-pkill -f py_accel/server.py 2>/dev/null; kill $HPID 2>/dev/null; pkill -f remote_hsm 2>/dev/null
+pkill -f py_accel/server.py 2>/dev/null; kill $HPID 2>/dev/null; pkill -x remote_hsm 2>/dev/null
 echo DONE
