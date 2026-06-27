@@ -114,6 +114,8 @@ def fig_spectrum():
         ("Python", 22, 3.8, SLATE, -8, 6, "right"),
         ("nginx", 112, 5.2, TEAL, -9, 5, "right"),
         ("memcached", 70, 3.8, TEAL, 0, -15, "center"),
+        ("Postgres", 30, 1.28, AMBER, -9, -2, "right"),
+        ("MariaDB", 34, 1.9, AMBER, 9, 2, "left"),
     ]
     fig, ax = plt.subplots(figsize=(6.6, 4.0))
     for (name, x, y, c, dx, dy, ha) in pts:
@@ -130,14 +132,15 @@ def fig_spectrum():
     ax.text(2, 8.0, "larger wins need a latency-bound\n(remote) offload — not a single\ncompute-saturating device",
             fontsize=7.6, color=RED, va="center")
     ax.set_xscale("log"); ax.set_yscale("log")
-    ax.set_xlim(1, 200); ax.set_ylim(2.5, 22)
+    ax.set_xlim(1, 200); ax.set_ylim(0.95, 22)
     ax.set_xlabel("lines added to the application  (0–112)")
     ax.set_ylabel("speedup over synchronous offload  (×, real GPU)")
     ax.grid(True, which="both", ls=":", lw=0.6, color="#cfd5e0", zorder=0)
     ax.set_xticks([1, 10, 100]); ax.set_xticklabels(["~0", "10", "100"])
-    ax.set_yticks([3,5,10,20]); ax.set_yticklabels(["3","5","10","20"])
+    ax.set_yticks([1,2,3,5,10,20]); ax.set_yticklabels(["1","2","3","5","10","20"])
     handles = [mpatches.Patch(color=SLATE, label="single event loop"),
-               mpatches.Patch(color=TEAL, label="event loop + pool")]
+               mpatches.Patch(color=TEAL, label="event loop + pool"),
+               mpatches.Patch(color=AMBER, label="per-connection DB (intra-query)")]
     ax.legend(handles=handles, fontsize=8.3, loc="lower right", frameon=True, framealpha=0.96)
     save(fig, "fig_spectrum")
 

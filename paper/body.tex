@@ -529,6 +529,16 @@ not saturated---a remote signer, a key-encapsulation, or an inference service, m
 in flight at once---rather than a single compute-bound accelerator. We measure exactly this regime
 on the correctness path below with a real remote signer (\S\ref{sec:correctness}).
 
+\paragraph{Databases on a real GPU.}
+A process- or thread-per-connection database (PostgreSQL, MariaDB) already overlaps offloads
+\emph{across} connections for free---the OS runs the backends concurrently, so the GPU is already
+fed---and the only edit-addressable win is \emph{within} a single query that pipelines many offloads.
+With a real GPU AES offload this intra-query pipelining is modest---PostgreSQL $1.28\times$ and
+MariaDB $1.9\times$ through a $\sim$$30$-line user-defined function with no core edits---precisely
+because the launch-bound GPU op is light: once the device is fed, pipelining more of them inside one
+query cannot exceed its throughput. The same edit, the same GPU, the same per-row work; the win is
+set by the device, exactly as the model predicts.
+
 \paragraph{Predicted vs.\ measured.}
 The regime and offload weight predict the outcome: a synchronous offload on a single event loop is
 catastrophic and the few-line fix recovers it up to the device's throughput limit; the pooled
