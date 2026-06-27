@@ -535,8 +535,30 @@ def fig_positioning():
     save(fig, "fig_positioning")
 
 
+def fig_blocksize():
+    # Measured (idle GPU, Python 32-thread executor): apps/aes_blocksize_py_results.csv
+    kb  = [4,8,16,32,64,128,256,512,1024,2048,4096,8192]
+    lat = [46.4,47.0,51.4,60.3,70.2,92.7,126.5,191.8,361.6,653.6,1188.1,2258.6]
+    spd = [1.24,1.26,1.25,1.25,1.31,1.42,1.53,1.83,2.37,2.96,3.83,5.41]
+    fig, ax = plt.subplots(figsize=(6.6, 3.4))
+    ax.plot(kb, spd, "-o", color=TEAL, lw=2.3, ms=6, label="speedup (async/sync)")
+    ax.set_xscale("log", base=2); ax.set_ylim(1.0, 5.8)
+    ax.set_xlabel("AES block size")
+    ax.set_ylabel("speedup  (×)", color=TEAL)
+    ax.axhline(1.0, color="#999", ls="--", lw=1.0)
+    ax.set_xticks(kb); ax.set_xticklabels(["4K","8K","16K","32K","64K","128K","256K","512K","1M","2M","4M","8M"], fontsize=7.5)
+    ax2 = ax.twinx()                                   # second axis: real single-op GPU latency
+    ax2.plot(kb, lat, "-s", color=AMBER, lw=1.8, ms=5, label="GPU latency")
+    ax2.set_yscale("log"); ax2.set_ylabel("single-op GPU latency  (µs)", color=AMBER)
+    ax.grid(True, which="both", ls=":", lw=0.5, color="#cfd5e0")
+    ax.set_title("AES block-size sweep on a single event loop (real GPU, idle)", loc="left", fontsize=10.5)
+    ax.legend(loc="upper left", fontsize=8.5, frameon=True)
+    ax2.legend(loc="lower right", fontsize=8.5, frameon=True)
+    save(fig, "fig_blocksize")
+
+
 if __name__ == "__main__":
     fig_pipeline(); fig_spectrum(); fig_eventloop(); fig_regimes(); fig_runtime()
     fig_walls(); fig_weight(); fig_correctness(); fig_dbpipeline(); fig_proxy(); fig_classifier()
-    fig_recipe(); fig_condsweep(); fig_landscape(); fig_latency(); fig_positioning()
+    fig_recipe(); fig_condsweep(); fig_landscape(); fig_latency(); fig_positioning(); fig_blocksize()
     print("ALL FIGURES DONE")

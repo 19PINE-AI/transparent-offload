@@ -690,3 +690,53 @@ model---concurrency model crossed with offload weight---predicts both the speedu
 advance, and a transparent conflict detector, validated on a stock Redis server, keeps the overlap
 correct when it touches shared state. The result is a practical recipe, and a map, for hiding
 fine-grained accelerator-offload latency in the servers that run online services today.
+
+
+% =====================================================================
+\appendix
+\section{AES Block-Size Sweep (detailed values)}
+\label{app:blocksize}
+
+Table~\ref{tab:blocksize} and Figure~\ref{fig:blocksize} give the full per-size measurements behind
+the offload-weight claim, all on a real GPU on an \emph{idle} device (no co-tenant compute), driving
+a single-event-loop server (Python \texttt{asyncio} with a $32$-thread executor) at $50$ concurrent
+clients. The AES block size is swept over consecutive powers of two from $4$\,KiB to $8$\,MiB; for
+each we report the measured single-op GPU latency (one offload in flight), the synchronous and
+asynchronous throughput, and their ratio. The speedup grows monotonically from $1.24\times$ at
+$4$\,KiB (launch-bound: the offload is tens of microseconds, on the order of the server's own
+per-request work, so there is little to overlap) to $5.41\times$ at $8$\,MiB (the offload is
+bandwidth-bound at $\sim$$2.3$\,ms, so overlapping it across requests reclaims most of the wait), up
+to the GPU's throughput ceiling.
+
+\begin{table}[h]
+  \centering
+  \begin{tabular}{rrrrr}
+    \toprule
+    block size & GPU latency (\textmu s) & sync (req/s) & async (req/s) & speedup \\
+    \midrule
+    4\,KiB   & 46.4   & 3750 & 4667 & $1.24\times$ \\
+    8\,KiB   & 47.0   & 3688 & 4650 & $1.26\times$ \\
+    16\,KiB  & 51.4   & 3657 & 4573 & $1.25\times$ \\
+    32\,KiB  & 60.3   & 3501 & 4371 & $1.25\times$ \\
+    64\,KiB  & 70.2   & 3326 & 4355 & $1.31\times$ \\
+    128\,KiB & 92.7   & 2970 & 4218 & $1.42\times$ \\
+    256\,KiB & 126.5  & 2706 & 4128 & $1.53\times$ \\
+    512\,KiB & 191.8  & 2454 & 4494 & $1.83\times$ \\
+    1\,MiB   & 361.6  & 1538 & 3644 & $2.37\times$ \\
+    2\,MiB   & 653.6  & 966  & 2858 & $2.96\times$ \\
+    4\,MiB   & 1188.1 & 506  & 1937 & $3.83\times$ \\
+    8\,MiB   & 2258.6 & 227  & 1228 & $5.41\times$ \\
+    \bottomrule
+  \end{tabular}
+  \caption{Real-GPU AES block-size sweep on a single-event-loop server (idle GPU). Source:
+    \texttt{transparent-runtime/apps/aes\_blocksize\_py\_results.csv}.}
+  \label{tab:blocksize}
+\end{table}
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.86\linewidth]{figs/fig_blocksize.pdf}
+  \caption{The same data: real-GPU AES speedup (left axis) and measured single-op GPU latency (right
+    axis) versus AES block size, consecutive powers of two from $4$\,KiB to $8$\,MiB.}
+  \label{fig:blocksize}
+\end{figure}
