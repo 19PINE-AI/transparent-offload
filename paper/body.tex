@@ -493,19 +493,21 @@ microseconds, the event-loop-with-pool servers nginx and memcached still gain $5
 $3.8\times$.
 
 \paragraph{Latency, not just throughput.}
-Overlap helps tail latency, not only peak throughput: by keeping the CPU busy during offloads rather
+Overlap helps latency, not only peak throughput: by keeping the CPU busy during offloads rather
 than blocking, it sustains low latency to a higher offered load before the latency knee. Under an
-open-loop arrival process, the overlapping path holds its median latency to roughly three times the
-load that the blocking path can (Figure~\ref{fig:latency})---the operating point that matters for a
-latency-sensitive service.
+open-loop arrival process with Poisson arrivals, the overlapping path holds both its median and its
+tail (p99) latency low to roughly \emph{four} times the offered load that the blocking path can---a
+median knee near $410$\,K req/s versus $103$\,K for blocking (Figure~\ref{fig:latency})---the
+operating point that matters for a latency-sensitive service.
 
 \begin{figure}[t]
   \centering
   \includegraphics[width=0.86\linewidth]{figs/fig_latency.pdf}
-  \caption{Latency under load. With an open-loop arrival process, blocking on the offload drives the
-    median latency up at its saturation point, while overlapping holds low latency to roughly
-    $3\times$ the offered load before its own knee. Overlap is a latency win, not only a throughput
-    win.}
+  \caption{Latency under load (measured, open-loop Poisson arrivals; \texttt{runtime/openloop.csv}).
+    Blocking on the offload drives both median (p50, left) and tail (p99, right) latency up at its
+    saturation point near $103$\,K req/s, while overlapping holds low latency to roughly $4\times$
+    that offered load (knee near $410$\,K req/s) before its own. Overlap is a latency win, not only a
+    throughput win.}
   \label{fig:latency}
 \end{figure}
 

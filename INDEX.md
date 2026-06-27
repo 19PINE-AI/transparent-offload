@@ -43,5 +43,5 @@ and a **runtime + performance study** (does it win?), both measured.
 
 ## Honest gaps (next, supervised)
 - **[DONE]** Full transparent M:N runtime on unmodified binaries (`transparent-runtime/`): real LD_PRELOAD overlap + correctness on 5 binaries/configs incl. real GPU (17.3x) and stock-nginx safety. Boundary documented: overlap applies to thread-per-connection; event-loop servers run safely but need the runtime to own the loop for overlap.
-- Open-loop latency generator (Pareto covers the trend).
+- **[DONE]** Open-loop latency-vs-load generator (`runtime/openloop.{c,csv}`, `fig_openloop.png`): overlap holds p50+p99 low to ~4× the offered load of blocking (knee ~410K vs ~103K req/s). Source for the paper's latency figure.
 - Real vLLM/Triton under TSan (Phase 5.1); wire runtime under nginx (Phase 3.1).

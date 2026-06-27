@@ -474,25 +474,34 @@ def fig_landscape():
 # Fig 15 — latency vs offered load (overlap sustains low latency further)
 # =====================================================================
 def fig_latency():
-    fig, ax = plt.subplots(figsize=(6.4, 3.0))
-    load = np.array([50, 100, 150, 170, 200, 300, 360, 400])*1e3
-    # p50 latency (us): block knees ~170k; overlap knees ~360k
-    block = np.array([26, 28, 33, 45, 1200, 90000, 2.5e5, 3.4e5])
-    coro  = np.array([24, 25, 26, 27, 28, 31, 36, 9000])
-    ax.plot(load/1e3, coro,  "-o", color=SLATE, lw=2.2, ms=6, label="overlap (fibers)")
-    ax.plot(load/1e3, block, "-s", color=RED, lw=2.2, ms=6, label="block (thread pool)")
-    ax.set_yscale("log"); ax.set_ylim(15, 6e5)
-    ax.set_xlim(40, 410)
-    ax.set_xlabel("offered load  (K requests / s)")
-    ax.set_ylabel("p50 latency  (µs, log)")
-    ax.axvline(170, color=RED, ls=":", lw=1.2); ax.axvline(360, color=SLATE, ls=":", lw=1.2)
-    ax.text(155, 6e4, "block\nknee", ha="right", fontsize=8.5, color=RED)
-    ax.text(345, 6e4, "overlap\nknee", ha="right", fontsize=8.5, color=SLATE)
-    ax.annotate("", xy=(360,40), xytext=(170,40), arrowprops=dict(arrowstyle="<->", color=INK))
-    ax.text(265, 30, "~3× the load at\nthe same latency", ha="center", fontsize=8.5, color=INK)
-    ax.legend(fontsize=9.5, loc="upper left", frameon=True)
-    ax.grid(True, which="both", ls=":", lw=0.5, color="#cfd5e0")
-    ax.set_title("Overlap holds low latency to ~3× the offered load", loc="left", fontsize=10.5)
+    # Measured open-loop data (Poisson arrivals) from runtime/openloop.csv.
+    # Offered load in K req/s; latency in us. Block's median knee is ~103K, the
+    # overlap path's is ~410K -> overlap holds low latency to ~4x the load.
+    co = dict(off=[51.4, 102.7, 205.4, 308.3, 410.7, 462.3],
+              p50=[22.8, 22.9, 23.3, 24.6, 32.2, 86919.4],
+              p99=[4243.4, 19778.4, 19660.3, 30084.2, 43123.4, 97054.8])
+    bl = dict(off=[50.7, 102.9, 205.4, 216.7, 250.4, 275.9],
+              p50=[25.4, 27.7, 259500.0, 337506.9, 336862.1, 186429.1],
+              p99=[11649.2, 25898.4, 325811.6, 388513.3, 379708.5, 385242.2])
+    fig, axes = plt.subplots(1, 2, figsize=(6.8, 3.0), gridspec_kw=dict(wspace=0.34))
+    for ax, key, title in [(axes[0], 'p50', 'median (p50)'),
+                           (axes[1], 'p99', 'tail (p99)')]:
+        ax.plot(co['off'], co[key], "-o", color=SLATE, lw=2.2, ms=6, label="overlap (fibers)")
+        ax.plot(bl['off'], bl[key], "-s", color=RED,   lw=2.2, ms=6, label="block (thread pool)")
+        ax.set_yscale("log"); ax.set_ylim(15, 6e5); ax.set_xlim(40, 470)
+        ax.set_xlabel("offered load  (K req/s)")
+        ax.set_ylabel(f"{key} latency  (µs, log)")
+        ax.axvline(103, color=RED,   ls=":", lw=1.1)
+        ax.axvline(410, color=SLATE, ls=":", lw=1.1)
+        ax.grid(True, which="both", ls=":", lw=0.5, color="#cfd5e0")
+        ax.set_title(title, loc="left", fontsize=10)
+    axes[0].legend(fontsize=8.3, loc="upper left", frameon=True)
+    axes[0].annotate("", xy=(410, 42), xytext=(103, 42),
+                     arrowprops=dict(arrowstyle="<->", color=INK))
+    axes[0].text(256, 27, "~4× the load at\nthe same latency", ha="center",
+                 fontsize=8.0, color=INK)
+    fig.suptitle("Overlap holds low latency to ~4× the offered load (open-loop, Poisson arrivals)",
+                 fontsize=10.5, y=1.02)
     save(fig, "fig_latency")
 
 

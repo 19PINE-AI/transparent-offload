@@ -42,8 +42,11 @@ Throughput (K req/s), C=128, W=2µs CPU/req — `sweep_L.csv`, plotted in `fig_s
 - coro beats block by **1.36–1.46×** in throughput at every L, with 1/128 the threads.
 
 Caveat (honest): in this closed-loop saturation test coro's *p50 latency* is the queueing
-latency (≈ C/throughput); a fair latency-vs-load (open-loop) comparison is future work
-(Phase 3, open-loop generator). The throughput/CPU-efficiency story is the headline.
+latency (≈ C/throughput). The fair latency-vs-load (open-loop, Poisson arrivals) comparison
+was subsequently run — see `openloop.c` / `openloop.csv` / `fig_openloop.png`: overlap holds
+both p50 and p99 low to ~4× the offered load that blocking can (median knee ~410K vs ~103K
+req/s). This is the source for the paper's latency figure. The throughput/CPU-efficiency
+story remains the headline.
 
 Methodology note: polling threads run **SCHED_FIFO** (the machine's cores are not isolated
 and a co-tenant GPU job adds load); without it, busy/coro tails hit ms-scale from
