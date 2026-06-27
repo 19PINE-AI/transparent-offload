@@ -106,3 +106,4 @@ transparent-runtime/apps/nginx-run/*_temp/
 *.csr
 /transparent-runtime/gemm_calib
 /transparent-runtime/remote_hsm
+/transparent-runtime/apps/.gpu_all_done
