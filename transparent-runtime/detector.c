@@ -40,6 +40,18 @@ static void handler(int s, siginfo_t* si, void* u){
     det_faults++; mprotect((void*)(a & ~(PG-1)), PG, PROT_READ|PROT_WRITE);
 }
 
+/* Protect an explicit caller-provided region (e.g. a server's shared-state arena
+ * in heap/mmap), rather than the exe's data segments. Same write-fault + version
+ * machinery; lets the detector guard a real server's shared state. */
+void det_init_region(void* base, unsigned long len){
+    PG=sysconf(_SC_PAGESIZE);
+    rlo[0]=(uintptr_t)base; rhi[0]=(uintptr_t)base+len; nreg=1;
+    struct sigaction sa; memset(&sa,0,sizeof sa); sa.sa_sigaction=handler; sa.sa_flags=SA_SIGINFO; sigaction(SIGSEGV,&sa,0);
+    det_on=1;
+    protect_regions(PROT_READ);
+    fprintf(stderr,"[detector] region %p-%p (%lu pages)\n",base,(char*)base+len,len/PG);
+}
+
 void det_init(void){
     if(!getenv("RT_DETECT")) return;
     PG=sysconf(_SC_PAGESIZE);

@@ -23,6 +23,8 @@ while :; do
     ./gemm_calib 4 >> gemm_calib_i4.csv   2>>"$LOG"
     echo "== real-GPU weight sweep ==" >> "$LOG"
     bash apps/weight_sweep_gpu.sh > apps/weight_sweep_gpu.log 2>&1
+    echo "== detector on real Redis (real GPU offload) ==" >> "$LOG"
+    GEMM_N=${GEMM_N:-1024} bash apps/redis/det_rmw_test.sh > apps/redis/det_rmw_test.log 2>&1
     echo "$(date '+%F %T') DONE" >> "$LOG"
     break
   fi
