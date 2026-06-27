@@ -109,8 +109,9 @@ In summary, this paper makes the following contributions:
   \item \textbf{A minimal-edit recipe and a cross-landscape study}: one offload-overlap pattern on
     ten off-the-shelf servers with 18--112 lines added and 0--1 lines modified, evaluated on real
     hardware ($2$--$5\times$)---and the finding that the win is bounded at both ends, by the
-    accelerator's throughput (a compute-saturating GPU kernel) and by the server's own overlap
-    capacity (a real latency-bound remote signer tops out at $3.5\times$ behind a GIL-bound executor)
+    accelerator's throughput (a large GPU offload saturates the device's bandwidth) and by the
+    server's own overlap capacity (a real latency-bound remote signer tops out at $3.5\times$ behind a
+    GIL-bound executor)
     (\S\ref{sec:minimal}, \S\ref{sec:eval}).
   \item \textbf{A transparent conflict detector} that keeps overlapped offload correct when it
     mutates shared state, with no application changes (\S\ref{sec:correctness}).
@@ -456,9 +457,9 @@ Two mechanisms restore correctness without changing the application. First, \emp
 ordering} comes for free: because the runtime assigns one fiber per connection, a connection's
 dependent requests are serialized automatically, so pipelined order-dependent traffic is always
 correct. Second, for state shared \emph{across} connections we provide a transparent
-\emph{conflict detector}. It write-protects the application's data segments, snapshots a version clock
-when a fiber parks at its offload, and treats a write fault that lands on a page modified during the
-park as a conflict; under enforcement it holds a lightweight handler lock from the read to the write
+\emph{conflict detector}. It write-protects the application's shared-state pages, snapshots a version
+clock when a handler parks at its offload, and treats a write fault that lands on a page modified
+during the park as a conflict; under enforcement it holds a lightweight handler lock from the read to the write
 across the offload, so that only \emph{conflicting} handlers serialize while everyone else stays
 overlapped. On the stock-Redis workload the detector catches essentially every conflict ($26{,}185$
 flagged against $23{,}450$ lost) and, under enforcement, reduces lost updates to \emph{zero}.
@@ -492,7 +493,7 @@ CUDA stream with completion polled by \texttt{cudaEventQuery}~\cite{cudastreams}
 sweeping from $4$\,KiB (light, launch-bound) to $8$\,MiB (heavy, bandwidth-bound at $\sim$$2.3$\,ms).
 For the latency-bound, \emph{remote} offload class (HSM
 signatures, post-quantum KEMs, remote inference) we stand up a real remote signer over TCP that
-performs a genuine RSA-2048 signature per request (\S\ref{sec:correctness}). We drive the
+performs a genuine RSA-2048 signature per request. We drive the
 event-driven servers with standard load generators (\texttt{redis-benchmark}, \texttt{ab}). The
 cross-server summary is Figure~\ref{fig:spectrum} and the code cost is in \S\ref{sec:minimal}.
 
@@ -541,7 +542,7 @@ the server's per-request overhead) and grows monotonically to $5.41\times$ at $8
 ($2.3$\,ms). The ceiling is a property of the \emph{device}: as the block grows the async path drives
 the GPU toward its memory bandwidth, so overlap recovers the device \emph{utilization} that blocking
 wastes---keeping the GPU busy while the synchronous path idles it between requests---but it cannot
-exceed the device's throughput (a compute-bound kernel saturates even sooner). A \emph{latency-bound}
+exceed the device's throughput (a compute-bound kernel would saturate even sooner). A \emph{latency-bound}
 offload---whose device is not saturated, so many requests can be in flight at once---lifts that
 device ceiling: we build a real remote signer over TCP (a genuine RSA-2048 signature per request,
 $821$\,\textmu s round-trip) and the same Python server reaches $3.53\times$ ($2038\to7202$\,req/s).
@@ -693,8 +694,8 @@ end, a transparent runtime overlaps an unmodified thread-per-connection binary--
 narrow niche and hits three architectural walls, and it cannot help the event-driven servers that
 have the most to gain. A few lines at the offload site, routed through a server's own concurrency
 mechanism, work everywhere; measured on real hardware they recover $2$--$5\times$ across ten
-production servers. The win is bounded at both ends---by the accelerator's own throughput (a
-compute-saturating GPU kernel) and by the server's own overlap capacity (even a real latency-bound
+production servers. The win is bounded at both ends---by the accelerator's own throughput (a large
+GPU offload saturates the device's bandwidth) and by the server's own overlap capacity (even a real latency-bound
 remote signer tops out at $3.5\times$ behind a GIL-bound executor)---so the order-of-magnitude wins
 an unbounded offload model predicts do not survive real hardware, except in the purpose-built
 transparent runtime ($17.3\times$). A simple

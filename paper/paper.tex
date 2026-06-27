@@ -89,8 +89,8 @@ Node.js, Python/asyncio, Apache, Go, PostgreSQL, MariaDB, and HAProxy---the chan
 \textbf{18--112 lines added and 0--1 lines modified}. Measuring on real hardware only---no emulated
 latencies---real overlap lands at \textbf{$2$--$5\times$} on stock servers (and $17.3\times$ for the
 purpose-built transparent runtime), and we find it is bounded at \emph{both} ends: by the
-accelerator's own throughput (a compute-heavy GPU kernel saturates the device, so overlap recovers
-its utilization rather than multiplying it) and by the server's own overlap capacity (a real
+accelerator's own throughput (a large GPU offload saturates the device's memory bandwidth, so overlap
+recovers its utilization rather than multiplying it) and by the server's own overlap capacity (a real
 latency-bound remote signer lifts the device ceiling but then hits the \texttt{asyncio}/GIL executor
 at $3.5\times$). The dramatic order-of-magnitude wins that an unbounded offload model would predict
 do not survive contact with real hardware. A simple model

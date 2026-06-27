@@ -110,15 +110,16 @@ def fig_spectrum():
     # latency-bound offload are shown by line-count at the baseline (integration built;
     # measured at y=1 on the real-GPU AES path or pending a real remote offload).
     pts = [   # (app, lines_added, speedup, regime_color, dx, dy, ha) -- real GPU, 1MB AES
-        ("Redis", 83, 3.01, SLATE, -8, 6, "right"),
-        ("Node.js", 33, 2.54, SLATE, 0, -16, "center"),
-        ("nginx", 112, 2.74, TEAL, 9, 3, "left"),
-        ("memcached", 70, 2.93, TEAL, 0, 9, "center"),
-        ("Go", 28, 3.01, GREEN, -8, 5, "right"),
+        ("Redis", 83, 3.01, SLATE, 9, 2, "left"),
+        ("Node.js", 33, 2.54, SLATE, 9, 1, "left"),
+        ("Python", 22, 2.37, SLATE, -9, 5, "right"),
+        ("nginx", 112, 2.74, TEAL, 0, -14, "center"),
+        ("memcached", 70, 2.93, TEAL, 0, 10, "center"),
+        ("Go", 28, 3.01, GREEN, -9, 3, "right"),
         ("Apache", 27, 3.45, GREEN, 0, 9, "center"),
-        ("Postgres", 30, 1.28, AMBER, -9, -2, "right"),
-        ("MariaDB", 34, 1.9, AMBER, 9, 2, "left"),
-        ("HAProxy", 18, 2.10, PURPLE, 0, 10, "center"),
+        ("Postgres", 30, 1.28, AMBER, 0, -15, "center"),
+        ("MariaDB", 34, 1.9, AMBER, 9, -3, "left"),
+        ("HAProxy", 18, 2.10, PURPLE, -9, -11, "right"),
     ]
     fig, ax = plt.subplots(figsize=(6.6, 4.0))
     for (name, x, y, c, dx, dy, ha) in pts:
@@ -145,7 +146,7 @@ def fig_spectrum():
                mpatches.Patch(color=GREEN, label="thread / goroutine pool"),
                mpatches.Patch(color=AMBER, label="per-connection DB (intra-query)"),
                mpatches.Patch(color=PURPLE, label="proxy (offload agent)")]
-    ax.legend(handles=handles, fontsize=7.6, loc="lower right", frameon=True, framealpha=0.96)
+    ax.legend(handles=handles, fontsize=7.6, loc="upper right", frameon=True, framealpha=0.96)
     save(fig, "fig_spectrum")
 
 
@@ -556,7 +557,7 @@ def fig_blocksize():
 
 
 if __name__ == "__main__":
-    fig_pipeline(); fig_spectrum(); fig_eventloop(); fig_regimes(); fig_runtime()
-    fig_walls(); fig_weight(); fig_correctness(); fig_dbpipeline(); fig_proxy(); fig_classifier()
+    fig_pipeline(); fig_spectrum(); fig_regimes(); fig_runtime()
+    fig_walls(); fig_weight(); fig_correctness(); fig_classifier()
     fig_recipe(); fig_condsweep(); fig_landscape(); fig_latency(); fig_positioning()
     print("ALL FIGURES DONE")
