@@ -118,7 +118,7 @@ def fig_spectrum():
         ("Apache", 27, 3.45, GREEN, 0, 9, "center"),
         ("Postgres", 30, 1.28, AMBER, -9, -2, "right"),
         ("MariaDB", 34, 1.9, AMBER, 9, 2, "left"),
-        ("HAProxy", 18, 0.92, PURPLE, 0, 11, "center"),
+        ("HAProxy", 18, 2.10, PURPLE, 0, 10, "center"),
     ]
     fig, ax = plt.subplots(figsize=(6.6, 4.0))
     for (name, x, y, c, dx, dy, ha) in pts:

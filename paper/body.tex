@@ -340,10 +340,10 @@ instantiate the recipe on ten servers, one per concurrency model, and in every c
   \caption{The spectrum (the paper in one plot), all on a \emph{real GPU} with a $1$\,MiB AES offload,
     measured on an idle GPU. Each point is an off-the-shelf server; the $x$-axis is the lines of
     integration code, the $y$-axis the real-GPU speedup from overlapping the offload. The few-line
-    edit clusters at $2.5$--$3.5\times$---a real bandwidth-bound GPU offload lets overlap fill the
-    device but not exceed its throughput---dropping below $1\times$ only where the offload is light
-    relative to per-request work (HAProxy's proxy protocol overhead; the databases' backends already
-    overlap across connections, leaving only intra-query pipelining). The zero-line transparent
+    edit clusters at $2$--$3.5\times$---a real bandwidth-bound GPU offload lets overlap fill the
+    device but not exceed its throughput. The databases sit lower (intra-query pipelining only, as
+    their backends already overlap across connections); HAProxy's proxy reaches $2.1\times$ with a
+    C offload agent (a GIL-bound Python agent gets only $0.9\times$). The zero-line transparent
     runtime reaches $17.3\times$ in its niche on a small launch-bound offload (walls on third-party
     binaries). Color encodes the concurrency model (\S\ref{sec:taxonomy}).}
   \label{fig:spectrum}
@@ -498,12 +498,14 @@ genuinely idle GPU. The single-event-loop servers Redis and Node.js gain $3.0\ti
 the event-loop-with-pool servers nginx and memcached gain $2.7\times$ and $2.9\times$, from an edit of
 a few dozen lines with no failed requests. A thread/goroutine pool overlaps the offload
 \emph{automatically}, with no asynchronous code: Apache and a Go server gain $3.5\times$ and
-$3.0\times$ as the runtime runs other workers while one blocks in the offload. A proxy is the boundary
-case: HAProxy streaming each request through its SPOE engine to a real-GPU offload agent gains
-\emph{nothing} ($0.9\times$), because even a $1$\,MiB GPU offload is comparable to the agent's
-per-request protocol overhead---little idle time to reclaim, as the offload-weight rule predicts. The
-speedups cluster at $2.5$--$3.5\times$ because a real GPU AES offload at this size is bandwidth-bound:
-overlap fills the device, but cannot exceed its throughput.
+$3.0\times$ as the runtime runs other workers while one blocks in the offload. A proxy offloads
+through an external agent over HAProxy's SPOE engine, and here the \emph{agent} must not be the
+bottleneck: a GIL-bound Python agent gains nothing ($0.9\times$---its per-request protocol handling
+serializes), but a from-scratch C agent (a real \texttt{pthread} worker pool) recovers $2.1\times$
+on the same offload. The minimal-edit speedups cluster at $2$--$3.5\times$ because a real GPU AES
+offload at this size is bandwidth-bound: overlap fills the device, but cannot exceed its throughput
+(at $2.1\times$ the proxy's GPU still has headroom---the agent's protocol cost, not the device, caps
+it).
 
 \paragraph{Latency, not just throughput.}
 Overlap helps latency, not only peak throughput: by keeping the CPU busy during offloads rather
