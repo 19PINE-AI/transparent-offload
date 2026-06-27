@@ -15,6 +15,33 @@ rps(){ taskset -c 4 ab -k -c "$2" -t 5 -n 100000000 "$1" 2>/dev/null | awk '/Req
 wait_port(){ for i in $(seq 1 80); do (echo >"/dev/tcp/127.0.0.1/$1") 2>/dev/null && return 0; sleep 0.2; done; return 1; }
 echo "app,class,offload,baseline_rps,overlap_rps,speedup" > "$OUT"
 
+# ---- Redis (single event loop): accel.sync vs accel.async ----
+pkill -f "redis-server.*7782" 2>/dev/null; sleep 0.5
+ACCEL_LIB=$LIB redis-server --port 7782 --loadmodule "$ROOT/apps/redis/accel_module.so" --save '' --appendonly no --logfile /tmp/redis_g.log &
+for i in $(seq 1 60); do [ "$(redis-cli -p 7782 ping 2>/dev/null)" = PONG ] && break; sleep 0.2; done
+rb(){ redis-benchmark -q -p 7782 -n 30000 -c 50 "$1" 2>/dev/null | grep -oE '[0-9.]+ requests per second' | head -1 | awk '{print $1}'; }
+s=$(rb accel.sync); a=$(rb accel.async)
+awk -v s="$s" -v a="$a" 'BEGIN{printf "redis,single-event-loop,real-GPU-AES-1MB,%s,%s,%.2f\n",s,a,(s+0>0)?a/s:0}' | tee -a "$OUT"
+redis-cli -p 7782 shutdown nosave 2>/dev/null; sleep 0.4
+
+# ---- nginx (event loop + thread pool): /sync vs /async, c=50 ----
+pkill -f "nginx-1.18.0/objs/nginx" 2>/dev/null; sleep 0.5
+ACCEL_LIB=$LIB "$ROOT/apps/nginx-1.18.0/objs/nginx" -p "$ROOT/apps/nginx-run" -c "$ROOT/apps/nginx-run/nginx.conf" </dev/null >/tmp/nginx_g.log 2>&1 &
+if wait_port 7750; then
+  s=$(rps http://127.0.0.1:7750/sync 50); a=$(rps http://127.0.0.1:7750/async 50)
+  awk -v s="$s" -v a="$a" 'BEGIN{printf "nginx,event-loop-pool,real-GPU-AES-1MB,%s,%s,%.2f\n",s,a,(s+0>0)?a/s:0}' | tee -a "$OUT"
+fi
+"$ROOT/apps/nginx-1.18.0/objs/nginx" -p "$ROOT/apps/nginx-run" -s stop 2>/dev/null; sleep 0.5
+
+# ---- memcached (event loop + pool, -t 1): accelsync vs accelasync ----
+pkill -f "memcached-1.6.18/memcached" 2>/dev/null; sleep 0.5
+ACCEL_LIB=$LIB taskset -c 2 "$ROOT/apps/memcached-1.6.18/memcached" -p 7760 -t 1 -m 256 </dev/null >/tmp/mc.log 2>&1 &
+if wait_port 7760; then
+  s=$(python3 "$ROOT/apps/mc_bench.py" 7760 accelsync 50 5); a=$(python3 "$ROOT/apps/mc_bench.py" 7760 accelasync 50 5)
+  awk -v s="$s" -v a="$a" 'BEGIN{printf "memcached,event-loop-pool,real-GPU-AES-1MB,%s,%s,%.2f\n",s,a,(s+0>0)?a/s:0}' | tee -a "$OUT"
+fi
+pkill -f "memcached-1.6.18/memcached" 2>/dev/null; sleep 0.5
+
 # ---- Node.js (single event loop): /sync vs /async, c=50 ----
 pkill -f node_accel/server.js 2>/dev/null; sleep 0.5
 ACCEL_LIB=$LIB taskset -c 2 node "$ROOT/apps/node_accel/server.js" </dev/null >/tmp/node.log 2>&1 &
