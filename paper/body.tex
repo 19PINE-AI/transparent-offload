@@ -20,8 +20,8 @@ for the accelerator?}
 The textbook answers are unsatisfying precisely in the regime that matters
 (Figure~\ref{fig:pipeline}). The first is to \emph{relinquish the CPU}: after submitting the
 offload, block, and let the operating system run another thread. But a context switch on Linux costs
-several microseconds, and a fine-grained offload also takes from a few to tens of microseconds. Such
-an offload might be AES on a few kilobytes, a small inference, or an HSM round-trip. This is the
+several microseconds, and a fine-grained offload, whether AES on a few kilobytes, a small inference,
+or an HSM round-trip, also takes from a few to tens of microseconds. This is the
 ``killer microsecond'' regime~\cite{microsecond}: too long to spin away, too short for the operating
 system to schedule around profitably. The switch overhead is then comparable
 to the work it overlaps. It wastes CPU and \emph{adds} a thread-wakeup delay to the request's tail
@@ -209,7 +209,7 @@ and restored at every switch so that fibers do not see each other's transient st
 On a synchronous thread-per-connection handler this works well. With a real GPU performing AES, the
 runtime overlaps 64 connections' offloads on one carrier core and reaches $17.3\times$ the throughput
 of the same binary blocking on each offload, with results verified bit-for-bit. A DNN-inference
-server shows $11.8\times$. These confirm the mechanism. The rest of this section is about its limits,
+server shows $11.8\times$. These results confirm the mechanism. The rest of this section is about its limits,
 which turn out to be the more useful contribution.
 
 \subsection{What it takes to run real binaries}

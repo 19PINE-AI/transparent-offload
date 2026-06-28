@@ -84,7 +84,7 @@ We study this question across the landscape of real, off-the-shelf servers and f
 three hard walls: engines that synchronize below libc, managed runtimes that keep thread identity in
 native thread-local storage, and workloads whose per-request CPU already exceeds the offload. At the
 other extreme, a \emph{few lines} injected at the offload site overlap it through the application's
-own concurrency, and this works everywhere. We study ten production servers: Redis, nginx, memcached,
+own concurrency, and this works everywhere. We evaluate ten production servers: Redis, nginx, memcached,
 Node.js, Python/asyncio, Apache, Go, PostgreSQL, MariaDB, and HAProxy. Across them the change is
 \textbf{18--112 lines added and 0--1 lines modified}. Measuring on real hardware only, with no
 emulated latencies, real overlap lands at \textbf{$1.2$--$5\times$} on stock servers (and $17.3\times$
