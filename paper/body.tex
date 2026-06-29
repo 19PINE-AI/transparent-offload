@@ -408,7 +408,7 @@ only edit-addressable win is \emph{within} a single query, by pipelining a seria
 \paragraph{Code cost follows the same axis.}
 The number of lines is governed by whether the server exposes an asynchronous, deferred-response
 primitive. Plugin and extension interfaces (Redis, nginx, Apache, the databases) and language
-runtimes (Go, Python) provide one, so the integration is purely additive. Zero existing lines
+runtimes (Go, Python) provide one, so the integration is purely additive. No existing lines
 change. A server without such a primitive forces the developer to add the suspend/resume transition
 to its request state machine by hand. memcached is our only such case, and it is the only one that
 modifies an existing line.
@@ -417,7 +417,7 @@ modifies an existing line.
 The second axis is independent of the server (Figure~\ref{fig:weight}). Overlap reclaims the time
 spent waiting for the offload. If the per-request CPU work is already comparable to the offload, there
 is little to reclaim. Sweeping a \emph{real} GPU AES offload by block size on a single-event-loop
-server, a \emph{light} block ($4$\,KiB, $46$\,\textmu s, on the order of the runtime's own
+server, we find that a \emph{light} block ($4$\,KiB, $46$\,\textmu s, on the order of the runtime's own
 per-request overhead) yields essentially no speedup ($1.24\times$), and the speedup grows
 monotonically with offload weight to $5.41\times$ at $8$\,MiB ($2.3$\,ms), where it approaches the
 GPU's bandwidth (full per-size values in Appendix~\ref{app:blocksize}). The rule is simple and it
