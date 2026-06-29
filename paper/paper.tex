@@ -11,6 +11,7 @@
 \usepackage{amsmath}
 \usepackage{amssymb}
 \usepackage{graphicx}
+\usepackage{float}
 \usepackage{booktabs}
 \usepackage{listings}
 \usepackage{subcaption}
@@ -68,44 +69,46 @@
 \maketitle
 
 \begin{abstract}
-Hardware accelerators now sit on the critical path of online serving. They include GPUs, TPUs, and
-FPGAs, and increasingly \emph{remote} services such as hardware security modules, post-quantum
-cryptography, and inference servers. A request is received, pre-processed, handed to the accelerator,
-post-processed, and answered. While the accelerator works, the calling context stalls. For
-\emph{fine-grained} offloads (microseconds to a few milliseconds), the classic responses both fall
-short. A context switch to another thread, or a busy-wait, either wastes the CPU or adds a wakeup
-latency comparable to the offload itself. The principled fix is to \emph{overlap} the offload with
-other useful work, but this requires injecting concurrency into the application. The real question is
-\emph{how much the application must change}.
+Hardware accelerators now sit on the critical path of online serving: GPUs, TPUs, FPGAs, and
+increasingly \emph{remote} services such as hardware security modules, post-quantum cryptography, and
+inference servers. While the accelerator works, the calling context stalls. For \emph{fine-grained}
+offloads (microseconds to a few milliseconds), the classic responses both fall short: a context
+switch adds a wakeup latency comparable to the offload, and a busy-wait wastes the core. The
+principled fix is to \emph{overlap} the offload with other useful work, but this requires injecting
+concurrency into the application. The real question is \emph{how much the application must change}.
 
-We study this question across the landscape of real, off-the-shelf servers and find a
-\emph{spectrum}. At one extreme, an \texttt{LD\_PRELOAD} M:N fiber runtime overlaps the offload with
-\emph{zero} source modification. But it works only for thread-per-connection servers, and it hits
-three hard walls: engines that synchronize below libc, managed runtimes that keep thread identity in
-native thread-local storage, and workloads whose per-request CPU already exceeds the offload. At the
-other extreme, a \emph{few lines} injected at the offload site overlap it through the application's
-own concurrency, and this works everywhere. We evaluate ten production servers: Redis, nginx, memcached,
-Node.js, Python/asyncio, Apache, Go, PostgreSQL, MariaDB, and HAProxy. Across them the change is
-\textbf{18--112 lines added and 0--1 lines modified}. Measuring on real hardware only, with no
-emulated latencies, real overlap lands at \textbf{$1.2$--$5\times$} on stock servers (and $17.3\times$
-for the purpose-built transparent runtime). The win is bounded at \emph{both} ends. One bound is the
-accelerator's own throughput: a large GPU offload saturates the device's memory bandwidth, so overlap
-recovers its utilization rather than multiplying it. The other is the server's own overlap capacity: a
-real latency-bound remote signer lifts the device ceiling but then hits the \texttt{asyncio}/GIL
-executor at $3.5\times$. The dramatic order-of-magnitude wins that an unbounded offload model would
-predict do not survive contact with real hardware. A simple model predicts both the speedup and the
-code cost from two properties: the server's concurrency model and the offload weight relative to
-per-request work. When the overlapped offload touches shared state, a transparent page-protection
-conflict detector preserves correctness, which we validate on a stock Redis server. The result is a
-practical recipe, and a predictive map, for hiding accelerator-offload latency in existing
-event-driven servers.
+We study this across real, off-the-shelf servers and find a \emph{spectrum}. At one extreme, an
+\texttt{LD\_PRELOAD} M:N fiber runtime overlaps the offload with \emph{zero} source modification, but
+works only for thread-per-connection servers and hits three architectural walls: synchronization
+below libc, thread identity in native thread-local storage, and per-request CPU that already exceeds
+the offload. At the other extreme, a \emph{few lines} at the offload site route it through the
+application's own concurrency and work everywhere. Across ten production servers spanning every
+concurrency model the change is \textbf{18--112 lines added and 0--1 modified}, and real overlap lands
+at \textbf{$1.2$--$5\times$} on stock servers ($17.3\times$ for the transparent runtime), all measured
+on real hardware. A simple model predicts both the speedup and the code cost from two properties: the
+server's concurrency model and the offload's weight relative to per-request work, and the win is
+bounded at both ends, by the accelerator's throughput and by the server's own overlap capacity. A
+transparent page-protection conflict detector preserves correctness when the overlapped offload
+mutates shared state, validated on stock Redis.
 \end{abstract}
 
-\input{body}
+\begin{center}
+\small
+Code: \url{https://github.com/19PINE-AI/transparent-offload} \\[2pt]
+Website: \url{https://01.me/research/transparent-offload}
+\end{center}
+\vspace{-0.5em}
 
-\section*{Acknowledgements}
-This paper was produced using Pine Copilot's voice-directed \emph{whisper coding} workflow, in which the authors specify, discuss, and review the work by voice while a coding agent---Claude Code with Claude Opus 4.8---carries out the planning, coding, experiments, and paper writing.
-We thank BSQL Networking for hosting the NVIDIA RTX PRO 6000 GPU.
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\linewidth]{figs/fig_headline.pdf}
+  \caption{The headline result. A few lines of overlap recover $1.2$--$3.5\times$ over a synchronous
+    offload across ten stock servers (real GPU, 1\,MB AES); the transparent runtime reaches
+    $17.3\times$ with zero edits. Colour marks the concurrency model.}
+  \label{fig:headline}
+\end{figure}
+
+\input{body}
 
 \bibliographystyle{plainnat}
 \bibliography{reference}

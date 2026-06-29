@@ -67,15 +67,19 @@ def fig_pipeline():
             ax.add_patch(Rectangle((x, y), dur, 0.6, fc=col, ec=INK, lw=1.0,
                          hatch=hatch, zorder=2))
             if txt:
+                # on a hatched segment, back the label with a white pill so the
+                # slashes do not run across the text
+                bbox = (dict(boxstyle="round,pad=0.22", fc="white", ec="none", alpha=0.9)
+                        if hatch else None)
                 ax.text(x + dur/2, y + 0.3, txt, ha="center", va="center",
                         fontsize=8.5, color=INK if col != SLATE else "white",
-                        fontweight="bold")
+                        fontweight="bold", zorder=3, bbox=bbox)
             x += dur
         return x
     CPU = SLATE; IDLE = LIGHT; ACC = AMBER
     # Top: synchronous — CPU idle during offload
     ax = axes[0]
-    seg(ax, 0, [(1,CPU,"recv",None),(1,CPU,"pre",None),(5,IDLE,"accelerator busy","////"),
+    seg(ax, 0, [(1,CPU,"recv",None),(1,CPU,"pre",None),(5,IDLE,"accelerator busy","//"),
                 (1,CPU,"post",None),(1,CPU,"send",None)], "sync")
     ax.text(4.5, 0.82, "CPU idle (wasted)", ha="center", va="center", fontsize=9.5, color=RED, fontweight="bold")
     ax.set_xlim(0, 9.4); ax.set_ylim(-0.15, 1.05)
@@ -83,7 +87,7 @@ def fig_pipeline():
     # Bottom: overlapped — other requests fill the gap
     ax = axes[1]
     # request A
-    seg(ax, 0.7, [(1,CPU,"A:recv",None),(1,CPU,"A:pre",None),(5,LIGHT,"A: offloaded (parked)","////"),
+    seg(ax, 0.7, [(1,CPU,"A:recv",None),(1,CPU,"A:pre",None),(5,LIGHT,"A: offloaded (parked)","//"),
                   (1,CPU,"A:post",None)], "A")
     # request B,C run on the CPU during A's offload
     x=2
@@ -177,8 +181,8 @@ def fig_eventloop():
 # Fig 4 — concurrency-model regimes and the predicted win (schematic)
 # =====================================================================
 def fig_regimes():
-    fig, ax = plt.subplots(figsize=(6.5, 3.5))
-    ax.set_xlim(0, 10); ax.set_ylim(0, 10); ax.axis("off")
+    fig, ax = plt.subplots(figsize=(6.5, 2.95))
+    ax.set_xlim(0, 10); ax.set_ylim(2.95, 10.2); ax.axis("off")
     cols = [
         ("single\nevent loop", SLATE, "sync offload\nstalls EVERYTHING", "2.5–3.0×", "Redis, Node"),
         ("event loop\n+ pool", TEAL, "stalls one\nloop of N", "2.7–2.9×", "nginx, memcached"),
@@ -195,9 +199,9 @@ def fig_regimes():
         box(ax, x, 4.6, w, 1.8, fc="white", ec=col, text="", round=0.08, lw=1.6)
         ax.text(x+w/2, 5.5, win, ha="center", va="center", color=INK, fontsize=9, fontweight="bold")
         ax.text(x+w/2, 3.9, ex, ha="center", va="center", color="#5b6577", fontsize=7.8, style="italic")
-    ax.text(5.0, 9.85, "concurrency model  →  predicted minimal-edit win", ha="center",
+    ax.text(5.0, 10.0, "concurrency model  →  predicted minimal-edit win", ha="center",
             fontsize=11, fontweight="bold", color=INK)
-    ax.text(5.0, 2.9, "Win grows with offload weight; it pays only when the offload outweighs per-request CPU.",
+    ax.text(5.0, 3.35, "Win grows with offload weight; it pays only when the offload outweighs per-request CPU.",
             ha="center", fontsize=8.6, color="#5b6577", style="italic")
     save(fig, "fig_regimes")
 
@@ -206,8 +210,8 @@ def fig_regimes():
 # Fig 5 — transparent M:N fiber runtime (schematic)
 # =====================================================================
 def fig_runtime():
-    fig, ax = plt.subplots(figsize=(6.4, 3.4))
-    ax.set_xlim(0, 10); ax.set_ylim(0, 10); ax.axis("off")
+    fig, ax = plt.subplots(figsize=(6.4, 2.75))
+    ax.set_xlim(0, 10); ax.set_ylim(0, 8.9); ax.axis("off")
     # carrier core box containing fibers + scheduler
     box(ax, 0.4, 1.2, 5.2, 7.4, fc=LIGHT, ec=SLATE, text="", round=0.04, lw=1.6)
     ax.text(3.0, 8.1, "carrier core (one OS thread)", ha="center", fontsize=10, fontweight="bold", color=SLATE)
@@ -221,9 +225,9 @@ def fig_runtime():
     ax.text(6.1, 6.2, "offload\n(submit + yield)", ha="center", fontsize=8.2, color=INK)
     arrow(ax, (7.0, 4.9), (5.2, 2.6), color=SLATE, rad=0.2, ls="-")
     ax.text(6.1, 3.3, "completion\n(resume fiber)", ha="center", fontsize=8.2, color=INK)
-    # LD_PRELOAD note (with breathing room below the carrier box)
-    ax.set_ylim(-0.7, 10)
-    ax.text(5.0, 0.1, r"$\bf{LD\_PRELOAD}$ interposes pthread_create$\to$fiber, read/write/poll$\to$yield, offload$\to$yield."
+    # LD_PRELOAD note (tucked just under the carrier box)
+    ax.set_ylim(-0.55, 8.9)
+    ax.text(5.0, 0.05, r"$\bf{LD\_PRELOAD}$ interposes pthread_create$\to$fiber, read/write/poll$\to$yield, offload$\to$yield."
             "\nThe application binary is unchanged.", ha="center", fontsize=8.6, color="#5b6577")
     save(fig, "fig_runtime")
 
@@ -389,8 +393,8 @@ def fig_classifier():
 # Fig 12 — the minimal-edit recipe (schematic)
 # =====================================================================
 def fig_recipe():
-    fig, ax = plt.subplots(figsize=(6.5, 3.1))
-    ax.set_xlim(0, 12); ax.set_ylim(0, 7); ax.axis("off")
+    fig, ax = plt.subplots(figsize=(6.5, 2.5))
+    ax.set_xlim(0, 12); ax.set_ylim(1.55, 7.0); ax.axis("off")
     # the handler reaches the offload
     box(ax, 0.3, 4.6, 2.5, 1.6, fc=SLATE, ec=INK, text="handler reaches\nthe offload", fs=9.5, tc="white", round=0.07)
     # step 1: submit
@@ -409,9 +413,9 @@ def fig_recipe():
     box(ax, 8.6, 2.6, 3.0, 1.5, fc="white", ec=SLATE, text="3. resume + reply\non completion", fs=9, lw=1.6, round=0.07)
     arrow(ax, (10.1, 4.9), (10.1, 4.1), color=SLATE)
     arrow(ax, (8.6, 3.3), (7.2, 3.3), color=SLATE, ls="-")
-    ax.text(6.0, 6.7, "The minimal-edit recipe: route the offload through the server's existing suspend/resume machinery",
+    ax.text(6.0, 6.72, "The minimal-edit recipe: route the offload through the server's existing suspend/resume machinery",
             ha="center", fontsize=10, fontweight="bold", color=INK)
-    ax.text(6.0, 1.2, "18–112 lines added, 0–1 modified — the machinery already exists; one only reroutes the offload.",
+    ax.text(6.0, 1.85, "18–112 lines added, 0–1 modified — the machinery already exists; one only reroutes the offload.",
             ha="center", fontsize=8.7, color="#5b6577", style="italic")
     save(fig, "fig_recipe")
 
@@ -498,11 +502,14 @@ def fig_latency():
         ax.axvline(410, color=SLATE, ls=":", lw=1.1)
         ax.grid(True, which="both", ls=":", lw=0.5, color="#cfd5e0")
         ax.set_title(title, loc="left", fontsize=10)
-    axes[0].legend(fontsize=8.3, loc="upper left", frameon=True)
     axes[0].annotate("", xy=(410, 42), xytext=(103, 42),
                      arrowprops=dict(arrowstyle="<->", color=INK))
     axes[0].text(256, 27, "~4× the load at\nthe same latency", ha="center",
                  fontsize=8.0, color=INK)
+    # legend outside the plots (below) so it never overlaps the curves
+    h, l = axes[0].get_legend_handles_labels()
+    fig.legend(h, l, loc="upper center", bbox_to_anchor=(0.5, -0.02), ncol=2,
+               fontsize=8.6, frameon=True)
     fig.suptitle("Overlap holds low latency to ~4× the offered load (open-loop, Poisson arrivals)",
                  fontsize=10.5, y=1.02)
     save(fig, "fig_latency")
@@ -556,8 +563,54 @@ def fig_blocksize():
     save(fig, "fig_blocksize")
 
 
+# =====================================================================
+# Headline — per-server speedup over synchronous offload (page-1 teaser)
+# =====================================================================
+def fig_headline():
+    # Same real-GPU 1MB AES speedups as the spectrum (Fig. fig_spectrum), shown as a
+    # compact bar chart so it can ride on the abstract page as the headline result.
+    data = [   # (app, speedup, regime_color)
+        ("Apache",    3.45, GREEN),
+        ("Redis",     3.01, SLATE),
+        ("Go",        3.01, GREEN),
+        ("memcached", 2.93, TEAL),
+        ("nginx",     2.74, TEAL),
+        ("Node.js",   2.54, SLATE),
+        ("Python",    2.37, SLATE),
+        ("HAProxy",   2.10, PURPLE),
+        ("MariaDB",   1.90, AMBER),
+        ("Postgres",  1.28, AMBER),
+    ]
+    data = data[::-1]   # largest on top
+    names = [d[0] for d in data]; vals = [d[1] for d in data]; cols = [d[2] for d in data]
+    fig, ax = plt.subplots(figsize=(6.6, 1.5))
+    y = np.arange(len(names))
+    ax.barh(y, vals, color=cols, ec=INK, lw=0.9, height=0.68, zorder=3)
+    ax.axvline(1.0, color="#999", ls="--", lw=1.0, zorder=2)
+    ax.text(0.96, len(names)-0.4, "sync", fontsize=6.4, color="#777",
+            ha="right", va="top")
+    for yi, v in zip(y, vals):
+        ax.text(v + 0.05, yi, f"{v:.2f}×", va="center", ha="left",
+                fontsize=7.8, fontweight="bold", color=INK)
+    ax.set_yticks(y); ax.set_yticklabels(names, fontsize=8.2)
+    ax.set_xlim(0, 4.05); ax.set_ylim(-0.6, len(names)-0.4)
+    ax.set_xlabel("speedup over synchronous offload  (×, real GPU, 1 MB AES)", fontsize=9)
+    ax.grid(True, axis="x", ls=":", lw=0.5, color="#cfd5e0", zorder=0)
+    handles = [mpatches.Patch(color=SLATE,  label="event loop"),
+               mpatches.Patch(color=TEAL,   label="loop + pool"),
+               mpatches.Patch(color=GREEN,  label="thread pool"),
+               mpatches.Patch(color=AMBER,  label="per-conn DB"),
+               mpatches.Patch(color=PURPLE, label="proxy")]
+    # legend tucked into the empty bottom-right corner so it never covers a bar
+    ax.legend(handles=handles, fontsize=6.3, loc="lower right", frameon=True,
+              framealpha=0.95, borderpad=0.35, labelspacing=0.28,
+              handlelength=0.95, handletextpad=0.4)
+    save(fig, "fig_headline")
+
+
 if __name__ == "__main__":
     fig_pipeline(); fig_spectrum(); fig_regimes(); fig_runtime()
     fig_walls(); fig_weight(); fig_correctness(); fig_classifier()
     fig_recipe(); fig_condsweep(); fig_landscape(); fig_latency(); fig_positioning()
+    fig_headline()
     print("ALL FIGURES DONE")
