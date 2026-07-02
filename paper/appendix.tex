@@ -59,10 +59,9 @@ their exact version via a linker version script and resolve the real ones with \
 \begin{figure}[h]
   \centering
   \includegraphics[width=0.9\linewidth]{figs/fig_condsweep.pdf}
-  \caption{A reusable interposition hazard. The glibc condition-variable functions carry two
-    incompatible ABIs under one name. A naive unversioned interposer breaks the version-matched
-    relocation and silently corrupts \emph{some} binaries (MariaDB crashes at startup) while
-    sparing others. Version-matching the interposed symbols fixes all of them.}
+  \caption{A reusable interposition hazard. A naive unversioned interposer of the glibc
+    condition variable silently corrupts \emph{some} binaries (MariaDB crashes at startup) while
+    sparing others; version-matching the interposed symbols fixes all of them.}
   \label{fig:condsweep}
 \end{figure}
 

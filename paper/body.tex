@@ -51,16 +51,15 @@ production use: Redis, Node.js, Python/asyncio, nginx, memcached, Apache, Go, HA
 and MariaDB. Across the ten, the change is \textbf{22--138 lines added and zero or one existing
 line modified}---the core of the Redis integration is a dozen lines
 (Listing~\ref{lst:redis})---and on real hardware it recovers $1.2$--$5.4\times$ across servers
-and offload weights, with no failed requests (Figure~\ref{fig:headline}). The cost is small for a structural reason, not a lucky one:
+and offload weights (Figure~\ref{fig:headline}). The cost is small for a structural reason, not a lucky one:
 the integration only bridges the offload to machinery that already exists.
 
 That structure makes the outcome \emph{predictable}. Two properties of the deployment fix both the
 speedup and the code cost in advance: the server's \emph{concurrency model} determines what a
 synchronous offload costs and therefore what rerouting recovers, and how many lines the reroute
 takes; the offload's \emph{weight relative to per-request CPU work} determines whether overlap
-pays at all. The win is bounded at both ends---by the accelerator's throughput and by the
-concurrency the server itself can express---and the model locates every server we measured,
-including the ones where overlap does \emph{not} help.
+pays at all. The model locates every server we measured, including the ones where overlap does
+\emph{not} help.
 
 Two questions remain, and they complete the paper. First, \emph{can the change be zero?} When
 there is no source access at all, the libc symbol boundary is itself a suspension layer: an
@@ -135,9 +134,9 @@ backends concurrently), leaving \emph{intra-query} pipelining of a serial offloa
 win.
 
 The \emph{code cost} follows the same axis: where the server exposes a plugin API or a
-deferred-response primitive the reroute is purely additive; where it exposes none (memcached), the
+deferred-response primitive the reroute is purely additive; where it exposes none, the
 developer must add the suspend/resume transition to the request state machine by hand, which is
-where the line count comes from---including the only modified line.
+where the line count comes from (\S\ref{sec:recipe}).
 
 \begin{figure}[t]
   \centering
@@ -152,8 +151,8 @@ where the line count comes from---including the only modified line.
 \paragraph{Prediction 2: offload weight determines whether overlap pays.}
 The second property is independent of the server. Overlap reclaims the CPU time the offload would
 have wasted, so if per-request CPU work already rivals the offload there is little to reclaim; the
-win grows with the offload's weight until a ceiling. There are two ceilings: the
-\emph{accelerator's throughput} (overlap fills the device but cannot exceed it) and the
+win grows with the offload's weight until it hits one of two ceilings: the
+\emph{accelerator's throughput} (overlap fills the device but cannot exceed it) or the
 \emph{server's own overlap capacity} (the concurrency its machinery can keep in flight). Real
 speedups live between these bounds. Section~\ref{sec:eval} confirms both predictions, including a
 block-size sweep that traces the weight dependence on real hardware (Figure~\ref{fig:weight}) and
@@ -180,10 +179,9 @@ The recipe is the thesis made concrete, and it is uniform across servers
 \begin{figure}[t]
   \centering
   \includegraphics[width=\linewidth]{figs/fig_recipe.pdf}
-  \caption{The rerouting method. Submit the offload to a background executor, suspend the request with the
-    server's own deferred-response primitive, and resume it to reply on completion. Meanwhile the
-    server's loop serves other requests. The edit is small because the suspend/resume machinery
-    already exists.}
+  \caption{The rerouting method. While a request is suspended at its offload, the server's loop
+    serves other requests. The edit is small because the suspend/resume machinery already
+    exists.}
   \label{fig:recipe}
 \end{figure}
 
@@ -271,8 +269,7 @@ origin.
   \includegraphics[width=\linewidth]{figs/fig_spectrum.pdf}
   \caption{The study in one plot: lines of integration code vs.\ speedup from rerouting a real-GPU
     AES offload on an idle device ($1$\,MiB blocks; the databases pipeline a launch-bound op
-    intra-query). The few-line reroute clusters at $2$--$3.5\times$ (the offload is
-    bandwidth-bound, so device throughput is the ceiling); the databases
+    intra-query). The few-line reroute clusters at $2$--$3.5\times$; the databases
     sit lower; the zero-edit transparent runtime reaches $17.3\times$ in its niche
     (\S\ref{sec:transparent}). Color encodes the concurrency model.}
   \label{fig:spectrum}
@@ -445,14 +442,14 @@ across the ten-server landscape, Prediction~2 by sweeping the offload's weight--
 latency under load.
 
 \paragraph{Experimental setup.}
-All cross-server offloads are real, on real hardware, with no emulated latencies; the one
+All cross-server offloads run on real hardware, with no emulated latencies; the one
 exception is the open-loop latency study of Figure~\ref{fig:latency}, which uses a controlled
 emulated offload and is labeled as such. Experiments run on a server with an NVIDIA RTX PRO 6000
 (Blackwell) GPU. The GPU path performs AES~\citep{openssl} on its own CUDA stream, polled by
 \texttt{cudaEventQuery}~\citep{cudastreams}, with the block size sweeping from $4$\,KiB
 (launch-bound) to $8$\,MiB (bandwidth-bound). GPU AES is a stand-in for offloads that beat the
 host CPU (a modern core's AES-NI rivals a GPU on this cipher); we use it because it gives a
-cleanly tunable offload weight on real hardware. For the latency-bound \emph{remote} class (HSM
+cleanly tunable offload weight. For the latency-bound \emph{remote} class (HSM
 signatures, post-quantum KEMs, remote inference) we stand up a real TCP signer doing a genuine
 RSA-2048 signature per request. Servers are driven by standard load generators
 (\texttt{redis-benchmark}, \texttt{ab}).
@@ -516,11 +513,11 @@ blocking can sustain before its knee (Figure~\ref{fig:latency}).
 \label{sec:discussion}
 
 \paragraph{When rerouting does not pay.}
-The model doubles as a stop sign. An operator whose per-request CPU already rivals the offload has
-little to reclaim, and rerouting buys complexity for nothing (Prediction~2 of
-\S\ref{sec:model}---the same condition that raises the transparent runtime's third wall). And an
-operator whose accelerator is already saturated should buy device bandwidth, not rewire the
-server: overlap recovers wasted utilization but never manufactures throughput.
+The model doubles as a stop sign. When per-request CPU already rivals the offload
+(Prediction~2---the same condition that raises the transparent runtime's third wall), rerouting
+buys complexity for nothing. And an operator whose accelerator is already saturated should buy
+device bandwidth, not rewire the server: overlap recovers wasted utilization but never
+manufactures throughput.
 
 \paragraph{Scope of the conflict detector.}
 The conflict detector is a targeted safety net for the one pattern rerouting endangers, not a
