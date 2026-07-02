@@ -82,9 +82,9 @@ We study this across real, off-the-shelf servers and find a \emph{spectrum}. At 
 works only for thread-per-connection servers and hits three architectural walls: synchronization
 below libc, thread identity in native thread-local storage, and per-request CPU that already exceeds
 the offload. At the other extreme, a \emph{few lines} at the offload site route it through the
-application's own concurrency and work everywhere. Across ten production servers spanning every
+application's own concurrency and work everywhere. Across ten servers spanning every
 concurrency model the change is \textbf{18--112 lines added and 0--1 modified}, and real overlap lands
-at \textbf{$1.2$--$5\times$} on stock servers ($17.3\times$ for the transparent runtime), all measured
+at \textbf{$1.2$--$5.4\times$} ($17.3\times$ for the transparent runtime), all measured
 on real hardware. A simple model predicts both the speedup and the code cost from two properties: the
 server's concurrency model and the offload's weight relative to per-request work, and the win is
 bounded at both ends, by the accelerator's throughput and by the server's own overlap capacity. A
@@ -103,8 +103,8 @@ Website: \url{https://01.me/research/transparent-offload}
   \centering
   \includegraphics[width=\linewidth]{figs/fig_headline.pdf}
   \caption{The headline result. A few lines of overlap recover $1.2$--$3.5\times$ over a synchronous
-    offload across ten stock servers (real GPU, 1\,MB AES); the transparent runtime reaches
-    $17.3\times$ with zero edits. Colour marks the concurrency model.}
+    offload across ten servers (real GPU, 1\,MiB AES; up to $5.4\times$ at $8$\,MiB); the transparent
+    runtime reaches $17.3\times$ with zero edits. Color marks the concurrency model.}
   \label{fig:headline}
 \end{figure}
 

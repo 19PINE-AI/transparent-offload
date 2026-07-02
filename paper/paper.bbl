@@ -1,9 +1,15 @@
-\begin{thebibliography}{46}
+\begin{thebibliography}{47}
 \providecommand{\natexlab}[1]{#1}
 \providecommand{\url}[1]{\texttt{#1}}
 \expandafter\ifx\csname urlstyle\endcsname\relax
   \providecommand{\doi}[1]{doi: #1}\else
   \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Adya et~al.(2002)Adya, Howell, Theimer, Bolosky, and Douceur]{adya}
+Atul Adya, Jon Howell, Marvin Theimer, William~J. Bolosky, and John~R. Douceur.
+\newblock Cooperative task management without manual stack management.
+\newblock In \emph{Proceedings of the USENIX Annual Technical Conference
+  (ATC)}, 2002.
 
 \bibitem[Amza et~al.(1996)Amza, Cox, Dwarkadas, Keleher, Lu, Rajamony, Yu, and
   Zwaenepoel]{treadmarks}
@@ -153,13 +159,13 @@ Bojie Li, Zihao Xiang, Xiaoliang Wang, Han Ruan, Jingbin Zhou, and Kun Tan.
 \newblock libuv: Cross-platform asynchronous {I/O}.
 \newblock \url{https://libuv.org/}, 2024.
 
-\bibitem[Liu et~al.(2018)Liu, Cui, Schuh, Krishnamurthy, Peter, and
+\bibitem[Liu et~al.(2019)Liu, Cui, Schuh, Krishnamurthy, Peter, and
   Gupta]{ipipe}
 Ming Liu, Tianyi Cui, Henry Schuh, Arvind Krishnamurthy, Simon Peter, and Karan
   Gupta.
 \newblock Offloading distributed applications onto {SmartNICs} using {iPipe}.
-\newblock In \emph{Proceedings of the 2018 ACM SIGCOMM Conference}, pages
-  318--333, 2018.
+\newblock In \emph{Proceedings of the 2019 ACM SIGCOMM Conference}, pages
+  318--333, 2019.
 
 \bibitem[{MariaDB Foundation}(2024)]{mariadb}
 {MariaDB Foundation}.
@@ -255,7 +261,7 @@ Henry Qin, Qian Li, Jacqueline Speiser, Peter Kraft, and John Ousterhout.
 {ScyllaDB}.
 \newblock Seastar: A high-performance shared-nothing asynchronous {C++}
   framework.
-\newblock In \emph{\url{https://seastar.io/}}, 2024.
+\newblock \url{https://seastar.io/}, 2024.
 
 \bibitem[{State Threads Library}(2009)]{statethreads}
 {State Threads Library}.

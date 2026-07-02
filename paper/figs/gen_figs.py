@@ -141,7 +141,7 @@ def fig_spectrum():
     ax.set_xscale("log"); ax.set_yscale("log")
     ax.set_xlim(1, 200); ax.set_ylim(0.8, 22)
     ax.set_xlabel("lines added to the application  (0–112)")
-    ax.set_ylabel("speedup over synchronous offload  (×, real GPU)")
+    ax.set_ylabel("speedup over sync offload  (×, real GPU)")
     ax.grid(True, which="both", ls=":", lw=0.6, color="#cfd5e0", zorder=0)
     ax.set_xticks([1, 10, 100]); ax.set_xticklabels(["~0", "10", "100"])
     ax.set_yticks([1,2,3,5,10,20]); ax.set_yticklabels(["1","2","3","5","10","20"])
@@ -184,7 +184,7 @@ def fig_regimes():
     fig, ax = plt.subplots(figsize=(6.5, 2.95))
     ax.set_xlim(0, 10); ax.set_ylim(2.95, 10.2); ax.axis("off")
     cols = [
-        ("single\nevent loop", SLATE, "sync offload\nstalls everything", "2.5–3.0×", "Redis, Node"),
+        ("single\nevent loop", SLATE, "sync offload\nstalls everything", "2.4–3.0×", "Redis, Node,\nPython"),
         ("event loop\n+ pool", TEAL, "stalls one\nloop of N", "2.7–2.9×", "nginx, memcached"),
         ("thread /\ngoroutine\npool", GREEN, "pool overlaps\nthe rest", "3.0–3.5×\n(0 async code)", "Apache, Go"),
         ("proxy +\nagent", PURPLE, "agent offloads\nasync", "2.1×\n(C agent)", "HAProxy"),
@@ -198,10 +198,10 @@ def fig_regimes():
         ax.text(x+w/2, 7.35, what, ha="center", va="center", color="white", fontsize=7.0)
         box(ax, x, 4.6, w, 1.8, fc="white", ec=col, text="", round=0.08, lw=1.6)
         ax.text(x+w/2, 5.5, win, ha="center", va="center", color=INK, fontsize=8.2, fontweight="bold")
-        ax.text(x+w/2, 3.9, ex, ha="center", va="center", color="#5b6577", fontsize=7.3, style="italic")
+        ax.text(x+w/2, 4.05, ex, ha="center", va="center", color="#5b6577", fontsize=7.3, style="italic")
     ax.text(5.0, 10.0, "concurrency model  →  predicted minimal-edit win", ha="center",
             fontsize=11, fontweight="bold", color=INK)
-    ax.text(5.0, 3.35, "Win grows with offload weight; it pays only when the offload outweighs per-request CPU.",
+    ax.text(5.0, 3.2, "Win grows with offload weight; it pays only when the offload outweighs per-request CPU.",
             ha="center", fontsize=8.6, color="#5b6577", style="italic")
     save(fig, "fig_regimes")
 
@@ -273,7 +273,8 @@ def fig_weight():
     ax.set_xlabel("AES block size (offload weight)")
     ax.set_ylabel("speedup  (×)", color=TEAL)
     ax.axhline(1.0, color="#999", ls="--", lw=1.0)
-    ax.text(4, 1.02, "no benefit (offload $\\approx$ per-request work)", fontsize=7.2, color="#777", va="bottom")
+    ax.text(300, 1.05, "no benefit (offload $\\approx$ per-request work)", fontsize=7.6,
+            color="#777", ha="center", va="bottom")
     ax.set_xticks(kb); ax.set_xticklabels(["4K","8K","16K","32K","64K","128K","256K","512K","1M","2M","4M","8M"], fontsize=7.5)
     ax2 = ax.twinx()                                   # real single-op GPU latency
     ax2.plot(kb, lat, "-s", color=AMBER, lw=1.8, ms=5, label="GPU latency")
@@ -294,25 +295,27 @@ def fig_correctness():
     ax = axes[0]
     labels = ["naive\n(overlap)", "detector\n+ enforce"]
     lost = [23450, 0]
-    ax.bar(labels, [max(v,1) for v in lost], color=[RED, GREEN], ec=INK, lw=1.0, width=0.6)
-    ax.set_yscale("log"); ax.set_ylim(0.5, 1e5)
-    ax.set_ylabel("lost updates  (log)")
-    ax.text(0, 23450*1.6, "23,450\nlost", ha="center", fontsize=9.5, color=RED, fontweight="bold")
-    ax.text(1, 1.7, "0\ncorrect", ha="center", fontsize=9.5, color=GREEN, fontweight="bold")
+    # linear scale: zero is honestly zero (a log axis would draw it as 10^0 = 1)
+    ax.bar(labels, lost, color=[RED, GREEN], ec=INK, lw=1.0, width=0.6)
+    ax.set_ylim(0, 23450*1.45)
+    ax.set_ylabel("lost updates")
+    ax.text(0, 23450*1.05, "23,450\nlost", ha="center", fontsize=9.5, color=RED, fontweight="bold")
+    ax.text(1, 900, "0\ncorrect", ha="center", fontsize=9.5, color=GREEN, fontweight="bold")
     ax.set_title("Shared-state safety (stock Redis)", fontsize=9.5)
     ax.grid(True, axis="y", ls=":", lw=0.5, color="#cfd5e0")
-    # right: detector vs coarse lock throughput (real Redis, two contention levels)
+    # right: naive vs detector vs coarse lock throughput (real Redis, two contention levels)
     ax = axes[1]
-    det = [24.69, 23.94]; lock = [13.81, 14.24]
-    x = np.arange(2); w=0.36
-    ax.bar(x-w/2, det,  w, color=SLATE, ec=INK, lw=1.0, label="detector (overlapped)")
-    ax.bar(x+w/2, lock, w, color=AMBER, ec=INK, lw=1.0, label="lock (serialized)")
-    ax.set_ylim(0, 37)
+    naive = [24.06, 22.78]; det = [24.69, 23.94]; lock = [13.81, 14.24]
+    x = np.arange(2); w=0.26
+    ax.bar(x-w, naive, w, color=GRAY,  ec=INK, lw=1.0, label="naive (unsafe)")
+    ax.bar(x,   det,   w, color=SLATE, ec=INK, lw=1.0, label="detector (overlapped)")
+    ax.bar(x+w, lock,  w, color=AMBER, ec=INK, lw=1.0, label="lock (serialized)")
+    ax.set_ylim(0, 42)
     ax.set_xticks(x); ax.set_xticklabels(["high\ncontention","low\ncontention"])
     ax.set_ylabel("throughput  (K req/s)")
-    ax.text(0-w/2, 25.7, "1.8×", ha="center", fontsize=10, color=SLATE, fontweight="bold")
-    ax.text(1-w/2, 24.9, "1.7×", ha="center", fontsize=10, color=SLATE, fontweight="bold")
-    ax.legend(fontsize=7.6, loc="upper right", frameon=True)
+    ax.text(0, 26.0, "1.8×", ha="center", fontsize=10, color=SLATE, fontweight="bold")
+    ax.text(1, 25.2, "1.7×", ha="center", fontsize=10, color=SLATE, fontweight="bold")
+    ax.legend(fontsize=7.0, loc="upper right", frameon=True, framealpha=0.95)
     ax.set_title("Detector keeps offloads overlapped", fontsize=9.5)
     ax.grid(True, axis="y", ls=":", lw=0.5, color="#cfd5e0")
     save(fig, "fig_correctness")
@@ -376,15 +379,21 @@ def fig_classifier():
     fig, ax = plt.subplots(figsize=(6.4, 3.0))
     apps = ["Redis", "stunnel", "memcached", "MariaDB\n(InnoDB)"]
     futex = [25, 24, 1258, 12966]
-    colors = [TEAL, TEAL, TEAL, RED]
+    # stunnel: thread-per-conn, libc-level blocking -> fiberizable (teal).
+    # Redis/memcached: event-driven (epoll profile) -> loads safely, no overlap (gray).
+    # MariaDB/InnoDB: raw futex below libc + io_uring -> the wall (red).
+    colors = [GRAY, TEAL, GRAY, RED]
     bars = ax.bar(apps, futex, color=colors, ec=INK, lw=1.0, width=0.6)
-    ax.set_yscale("log"); ax.set_ylim(8, 40000)
+    ax.set_yscale("log"); ax.set_ylim(8, 60000)
     ax.set_ylabel("per-request futex calls  (log)")
-    ax.text(3, 12966*1.4, "+ io_uring\n→ the wall", ha="center", fontsize=9, color=RED, fontweight="bold")
-    ax.axhline(100, color="#888", ls="--", lw=1.0)
-    ax.text(0.0, 130, "fiberizable", fontsize=9, color=TEAL, va="bottom", fontweight="bold")
-    ax.text(3.0, 130, "sub-libc wall", fontsize=9, color=RED, va="bottom", ha="center", fontweight="bold",
-            bbox=dict(boxstyle="round,pad=0.25", fc="white", ec="none", alpha=0.9), zorder=5)
+    ax.text(3, 12966*1.25, "sub-libc wall\n(+ io_uring)", ha="center", fontsize=8.5, color=RED,
+            va="bottom", fontweight="bold")
+    ax.text(1, 24*1.5, "fiberizable", fontsize=8.5, color=TEAL, ha="center", va="bottom",
+            fontweight="bold")
+    handles = [mpatches.Patch(color=TEAL, label="fiberizable (libc-level blocking)"),
+               mpatches.Patch(color=GRAY, label="event-driven (loads safely, no overlap)"),
+               mpatches.Patch(color=RED,  label="sub-libc wall")]
+    ax.legend(handles=handles, fontsize=7.2, loc="upper left", frameon=True, framealpha=0.95)
     ax.grid(True, axis="y", ls=":", lw=0.5, color="#cfd5e0")
     ax.set_title("Futex density predicts whether a binary can be fiberized", loc="left", fontsize=10.5)
     save(fig, "fig_classifier")
@@ -593,7 +602,7 @@ def fig_headline():
                 fontsize=7.8, fontweight="bold", color=INK)
     ax.set_yticks(y); ax.set_yticklabels(names, fontsize=8.2)
     ax.set_xlim(0, 4.05); ax.set_ylim(-0.6, len(names)-0.4)
-    ax.set_xlabel("speedup over synchronous offload  (×, real GPU, 1 MB AES)", fontsize=9)
+    ax.set_xlabel("speedup over synchronous offload  (×, real GPU, 1 MiB AES)", fontsize=9)
     ax.grid(True, axis="x", ls=":", lw=0.5, color="#cfd5e0", zorder=0)
     handles = [mpatches.Patch(color=SLATE,  label="event loop"),
                mpatches.Patch(color=TEAL,   label="loop + pool"),
