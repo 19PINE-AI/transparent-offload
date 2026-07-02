@@ -96,7 +96,18 @@ repeated-call pattern, so for nginx we report only the real-GPU number above.)
 These overlap *across connections* for free (separate backends), so the edit-based win is
 **intra-query offload pipelining**: a C extension / UDF where `accel_sync(n)` issues n offloads
 serially and `accel_async(n)` keeps all n in flight (**0 core edits**, 34–42 lines). The win is set
-by the offload: for fast launch-bound GPU AES it's modest (Postgres 1.28×, MariaDB ~1.9×), but for a
+by the offload. Re-measured 2026-07-02 on an idle GPU, n=256, 5 runs per cell, per-run data in
+`db_intraquery_gpu.csv` (supersedes the earlier prose-only 1.28×/~1.9× figures, which had no CSV
+and are not reproducible under these conditions):
+
+| db | AES bytes | serial `accel_sync(256)` | pipelined `accel_async(256)` | speedup |
+|---|---:|---:|---:|---:|
+| Postgres | 1 MiB (bandwidth-bound) | 27.4 ms | 10.6 ms | **2.59×** |
+| MariaDB | 1 MiB (bandwidth-bound) | 27.6 ms | 10.7 ms | **2.59×** |
+| Postgres | 4 KiB (launch-bound) | 8.6 ms | 1.8 ms | **4.8×** |
+| MariaDB | 4 KiB (launch-bound) | 8.5 ms | 1.3 ms | **6.4×** |
+
+For a
 **high-latency parallel offload** (~1 ms, many in-flight — an HSM sign, a PQC KEM, a remote inference
 round-trip), pipelining 256 offloads in one query is dramatic:
 

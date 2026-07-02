@@ -225,15 +225,15 @@ void *worker(void *arg) {                 /* pool thread */
     Apache 2.4       & module (\texttt{apxs}), pooled workers     & 27  & 0 & $3.45\times$ \\
     Go 1.18          & plain blocking \texttt{cgo} call           & 28  & 0 & $3.01\times$ \\
     HAProxy 2.4      & SPOE + standalone C agent                  & 138 & 0 & $2.10\times$ \\
-    PostgreSQL 14    & C extension (intra-query)                  & 42  & 0 & $1.28\times^\dagger$ \\
-    MariaDB 10.6     & UDF (intra-query)                          & 34  & 0 & $\sim$$1.9\times^\dagger$ \\
+    PostgreSQL 14    & C extension (intra-query)                  & 42  & 0 & $2.59\times^\dagger$ \\
+    MariaDB 10.6     & UDF (intra-query)                          & 34  & 0 & $2.59\times^\dagger$ \\
     \bottomrule
   \end{tabular}
   \caption{Offload rerouting on ten off-the-shelf servers (grouped by concurrency model: single event
     loop, event loop + pool, thread/goroutine pool, proxy, per-connection database). ``+lines'' is
     integration code added; ``mod'' is existing lines modified. Speedups are over the synchronous
-    offload with a real GPU ($1$\,MiB AES; $^\dagger$the databases pipeline a launch-bound op
-    intra-query). Seven are stock server binaries; for Node.js, Python, and Go the server is an
+    offload with a real GPU ($1$\,MiB AES; $^\dagger$the databases pipeline the op intra-query:
+    serial vs.\ pipelined offloads within one query). Seven are stock server binaries; for Node.js, Python, and Go the server is an
     idiomatic handler on the stock runtime. Measurement setup: \S\ref{sec:eval}.}
   \label{tab:servers}
 \end{table}
@@ -268,9 +268,9 @@ origin.
   \centering
   \includegraphics[width=\linewidth]{figs/fig_spectrum.pdf}
   \caption{The study in one plot: lines of integration code vs.\ speedup from rerouting a real-GPU
-    AES offload on an idle device ($1$\,MiB blocks; the databases pipeline a launch-bound op
-    intra-query). The few-line reroute clusters at $2$--$3.5\times$; the databases
-    sit lower; the zero-edit transparent runtime reaches $17.3\times$ in its niche
+    AES offload on an idle device ($1$\,MiB blocks; the databases pipeline the op intra-query).
+    The few-line reroute clusters at $2$--$3.5\times$; the zero-edit transparent runtime
+    reaches $17.3\times$ in its niche
     (\S\ref{sec:transparent}). Color encodes the concurrency model.}
   \label{fig:spectrum}
 \end{figure}
@@ -459,8 +459,9 @@ On a $1$\,MiB GPU AES offload (realistic bulk crypto, idle GPU) the reroute reco
 model predicts in every regime, with no failed requests (Figure~\ref{fig:headline},
 Table~\ref{tab:servers}): single event loops and event-loop-with-pool servers cluster around
 $2.4$--$3\times$, thread and goroutine pools reach $3.0$--$3.5\times$ with \emph{no} asynchronous
-code, and the per-connection databases show only the predicted intra-query win with a launch-bound
-op. The cluster tops out at $2$--$3.5\times$ because this offload is bandwidth-bound: once
+code, and the per-connection databases recover $2.6\times$ through the one channel the model
+leaves them, pipelining the offloads \emph{within} a query rather than across connections.
+The cluster tops out at $2$--$3.5\times$ because this offload is bandwidth-bound: once
 overlap saturates the device, its throughput is the ceiling. The proxy isolates where the win comes from:
 HAProxy's gain rides entirely on the offload \emph{agent}, so a 21-line GIL-bound Python agent
 gains nothing while a 138-line C \texttt{pthread}-pool agent recovers $2.1\times$ on the same

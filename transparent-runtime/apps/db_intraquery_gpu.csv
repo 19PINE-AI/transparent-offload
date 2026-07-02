@@ -1,0 +1,27 @@
+# Intra-query offload pipelining on per-connection databases: SELECT accel_sync(256) vs
+# SELECT accel_async(256), real GPU AES (libaccel_gpu.so, NVIDIA RTX PRO 6000 Blackwell, idle),
+# 5 timed runs per cell after a warmup accel_async(256)+accel_sync(16) in the same session.
+# PostgreSQL 14.23 (stock, C extension pg_accel), timing: psql \timing.
+# MariaDB 10.6.23 (stock, UDF maria_udf.so), timing: SHOW PROFILES.
+# Measured 2026-07-02. aes_bytes is ACCEL_AES_BYTES (device op size per offload).
+db,aes_bytes,n,run,sync_ms,async_ms
+postgres,1048576,256,1,27.555,10.507
+postgres,1048576,256,2,27.041,10.461
+postgres,1048576,256,3,27.178,10.347
+postgres,1048576,256,4,27.317,11.002
+postgres,1048576,256,5,27.664,10.579
+mariadb,1048576,256,1,28.186,10.521
+mariadb,1048576,256,2,27.300,10.694
+mariadb,1048576,256,3,27.660,10.915
+mariadb,1048576,256,4,27.631,10.438
+mariadb,1048576,256,5,27.266,10.687
+postgres,4096,256,1,8.639,1.635
+postgres,4096,256,2,8.568,1.258
+postgres,4096,256,3,8.594,1.225
+postgres,4096,256,4,8.573,2.391
+postgres,4096,256,5,8.825,2.428
+mariadb,4096,256,1,8.616,1.664
+mariadb,4096,256,2,8.585,1.259
+mariadb,4096,256,3,8.555,1.247
+mariadb,4096,256,4,8.511,1.219
+mariadb,4096,256,5,8.399,1.323

@@ -103,8 +103,8 @@ Website: \url{https://01.me/research/transparent-offload}
   \centering
   \includegraphics[width=\linewidth]{figs/fig_headline.pdf}
   \caption{The headline result. Rerouting the offload through each server's own concurrency
-    recovers $1.3$--$3.5\times$ across ten servers (real GPU AES, $1$\,MiB; up to $5.4\times$ at
-    $8$\,MiB; the databases pipeline a launch-bound op); zero-edit rerouting from outside the
+    recovers $2.1$--$3.5\times$ across ten servers (real GPU AES, $1$\,MiB; up to $5.4\times$ at
+    $8$\,MiB; the databases pipeline the op intra-query); zero-edit rerouting from outside the
     binary reaches $17.3\times$ (\S\ref{sec:transparent}). Color marks the concurrency model.}
   \label{fig:headline}
 \end{figure}

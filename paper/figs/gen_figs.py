@@ -116,14 +116,14 @@ def fig_spectrum():
     # measured at y=1 on the real-GPU AES path or pending a real remote offload).
     pts = [   # (app, lines_added, speedup, regime_color, dx, dy, ha) -- real GPU AES
         ("Redis", 83, 3.01, SLATE, 9, 2, "left"),
-        ("Node.js", 34, 2.54, SLATE, 9, 1, "left"),
+        ("Node.js", 34, 2.54, SLATE, 0, -14, "center"),
         ("Python", 22, 2.37, SLATE, -9, 5, "right"),
         ("nginx", 112, 2.74, TEAL, 0, -14, "center"),
         ("memcached", 70, 2.93, TEAL, 0, 10, "center"),
         ("Go", 28, 3.01, GREEN, -9, 3, "right"),
         ("Apache", 27, 3.45, GREEN, 0, 9, "center"),
-        ("Postgres", 42, 1.28, AMBER, 0, -15, "center"),
-        ("MariaDB", 34, 1.9, AMBER, 9, -3, "left"),
+        ("Postgres", 42, 2.59, AMBER, 9, -3, "left"),
+        ("MariaDB", 34, 2.59, AMBER, 0, 9, "center"),   # nearly coincides with Node.js
         ("HAProxy", 138, 2.10, PURPLE, 0, -15, "center"),   # standalone C SPOE agent
     ]
     fig, ax = plt.subplots(figsize=(6.6, 4.0))
@@ -492,19 +492,19 @@ def fig_positioning():
 def fig_headline():
     # Same real-GPU AES speedups as the spectrum (Fig. fig_spectrum), shown as a
     # compact bar chart so it can ride on the abstract page as the headline result.
-    # (1 MiB blocks; the two databases pipeline a launch-bound op intra-query, and
-    # MariaDB's source records ~1.9x, so its label is printed as approximate.)
+    # (1 MiB blocks for all ten; the two databases pipeline the same op intra-query.
+    # DB source: transparent-runtime/apps/db_intraquery_gpu.csv.)
     data = [   # (app, speedup, label, regime_color)
         ("Apache",    3.45, "3.45×", GREEN),
         ("Redis",     3.01, "3.01×", SLATE),
         ("Go",        3.01, "3.01×", GREEN),
         ("memcached", 2.93, "2.93×", TEAL),
         ("nginx",     2.74, "2.74×", TEAL),
+        ("MariaDB",   2.59, "2.59×", AMBER),
+        ("Postgres",  2.59, "2.59×", AMBER),
         ("Node.js",   2.54, "2.54×", SLATE),
         ("Python",    2.37, "2.37×", SLATE),
         ("HAProxy",   2.10, "2.10×", PURPLE),
-        ("MariaDB",   1.90, "~1.9×", AMBER),
-        ("Postgres",  1.28, "1.28×", AMBER),
     ]
     data = data[::-1]   # largest on top
     names = [d[0] for d in data]; vals = [d[1] for d in data]
