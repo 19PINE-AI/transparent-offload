@@ -184,21 +184,21 @@ def fig_regimes():
     fig, ax = plt.subplots(figsize=(6.5, 2.95))
     ax.set_xlim(0, 10); ax.set_ylim(2.95, 10.2); ax.axis("off")
     cols = [
-        ("single\nevent loop", SLATE, "sync offload\nstalls EVERYTHING", "2.5–3.0×", "Redis, Node"),
+        ("single\nevent loop", SLATE, "sync offload\nstalls everything", "2.5–3.0×", "Redis, Node"),
         ("event loop\n+ pool", TEAL, "stalls one\nloop of N", "2.7–2.9×", "nginx, memcached"),
-        ("thread /\ngoroutine pool", GREEN, "pool overlaps\nthe rest", "3.0–3.5×\n(0 async code)", "Apache, Go"),
-        ("proxy +\nagent", PURPLE, "agent offloads\nasync", "2.1× (C agent)", "HAProxy"),
+        ("thread /\ngoroutine\npool", GREEN, "pool overlaps\nthe rest", "3.0–3.5×\n(0 async code)", "Apache, Go"),
+        ("proxy +\nagent", PURPLE, "agent offloads\nasync", "2.1×\n(C agent)", "HAProxy"),
         ("process-per-\nconnection", AMBER, "OS overlaps\nconnections free", "intra-query\npipelining", "Postgres, MariaDB"),
     ]
     n = len(cols); w = 1.78; gap = 0.16; x0 = 0.15
     for i,(title,col,what,win,ex) in enumerate(cols):
         x = x0 + i*(w+gap)
         box(ax, x, 6.7, w, 2.7, fc=col, ec=INK, text="", round=0.08)
-        ax.text(x+w/2, 8.7, title, ha="center", va="center", color="white", fontsize=9.5, fontweight="bold")
-        ax.text(x+w/2, 7.5, what, ha="center", va="center", color="white", fontsize=7.6)
+        ax.text(x+w/2, 8.55, title, ha="center", va="center", color="white", fontsize=8.4, fontweight="bold")
+        ax.text(x+w/2, 7.35, what, ha="center", va="center", color="white", fontsize=7.0)
         box(ax, x, 4.6, w, 1.8, fc="white", ec=col, text="", round=0.08, lw=1.6)
-        ax.text(x+w/2, 5.5, win, ha="center", va="center", color=INK, fontsize=9, fontweight="bold")
-        ax.text(x+w/2, 3.9, ex, ha="center", va="center", color="#5b6577", fontsize=7.8, style="italic")
+        ax.text(x+w/2, 5.5, win, ha="center", va="center", color=INK, fontsize=8.2, fontweight="bold")
+        ax.text(x+w/2, 3.9, ex, ha="center", va="center", color="#5b6577", fontsize=7.3, style="italic")
     ax.text(5.0, 10.0, "concurrency model  →  predicted minimal-edit win", ha="center",
             fontsize=11, fontweight="bold", color=INK)
     ax.text(5.0, 3.35, "Win grows with offload weight; it pays only when the offload outweighs per-request CPU.",
@@ -236,25 +236,25 @@ def fig_runtime():
 # Fig 6 — three walls where transparency stops (schematic)
 # =====================================================================
 def fig_walls():
-    fig, ax = plt.subplots(figsize=(6.5, 3.3))
-    ax.set_xlim(0, 12); ax.set_ylim(0, 9); ax.axis("off")
+    fig, ax = plt.subplots(figsize=(6.5, 3.6))
+    ax.set_xlim(0, 12); ax.set_ylim(-0.4, 9); ax.axis("off")
     # three layers (kept clean)
     box(ax, 0.4, 6.6, 11.2, 1.7, fc=LIGHT, ec=INK, text="", round=0.03)
     ax.text(2.9, 7.45, "Application / runtime", ha="center", va="center", fontsize=10, color=INK, fontweight="bold")
-    box(ax, 0.4, 4.0, 11.2, 1.7, fc="#DCE6F2", ec=SLATE, text="libc symbols  —  the interposition layer",
+    box(ax, 0.4, 4.2, 11.2, 1.7, fc="#DCE6F2", ec=SLATE, text="libc symbols  —  the interposition layer",
         fs=9.5, round=0.03, lw=1.8)
-    box(ax, 0.4, 1.4, 11.2, 1.7, fc=LIGHT, ec=INK, text="Kernel / hardware", fs=10, round=0.03)
+    box(ax, 0.4, 1.8, 11.2, 1.5, fc=LIGHT, ec=INK, text="Kernel / hardware", fs=10, round=0.03)
     ax.text(6.0, 8.6, "Where transparent interposition reaches — and the three walls", ha="center",
             fontsize=10.5, fontweight="bold", color=INK)
     # wall 1: raw futex bypasses libc (arrow from app, around libc, to kernel)
-    arrow(ax, (1.5, 6.6), (1.5, 3.1), color=RED, lw=2.2, rad=0.0)
-    ax.text(1.5, 0.7, "raw syscall(futex)\nbelow libc\n(InnoDB)", ha="center", fontsize=8, color=RED, fontweight="bold")
+    arrow(ax, (1.5, 6.6), (1.5, 3.3), color=RED, lw=2.2, rad=0.0)
+    ax.text(1.5, 1.35, "raw syscall(futex)\nbelow libc\n(InnoDB)", ha="center", va="top", fontsize=8, color=RED, fontweight="bold")
     # wall 2: native TLS register (lives in the app/runtime; not virtualizable)
     box(ax, 6.0, 6.75, 1.7, 1.4, fc="white", ec=RED, text="%fs\nTLS", fs=8.5, tc=RED, lw=1.8, round=0.06)
-    ax.text(6.85, 0.7, "thread identity in\nnative TLS register\n(JVM, Go)", ha="center", fontsize=8, color=RED, fontweight="bold")
+    ax.text(6.85, 1.35, "thread identity in\nnative TLS register\n(JVM, Go)", ha="center", va="top", fontsize=8, color=RED, fontweight="bold")
     # wall 3: no idle cpu
     box(ax, 9.4, 6.75, 1.7, 1.4, fc="white", ec=RED, text="CPU\n100%", fs=8.5, tc=RED, lw=1.8, round=0.06)
-    ax.text(10.25, 0.7, "per-request CPU\n> offload\n(TLS crypto)", ha="center", fontsize=8, color=RED, fontweight="bold")
+    ax.text(10.25, 1.35, "per-request CPU\n> offload\n(TLS crypto)", ha="center", va="top", fontsize=8, color=RED, fontweight="bold")
     save(fig, "fig_walls")
 
 
@@ -273,7 +273,7 @@ def fig_weight():
     ax.set_xlabel("AES block size (offload weight)")
     ax.set_ylabel("speedup  (×)", color=TEAL)
     ax.axhline(1.0, color="#999", ls="--", lw=1.0)
-    ax.text(4, 1.04, "no benefit (offload $\\approx$ per-request work)", fontsize=7.6, color="#777", va="bottom")
+    ax.text(4, 1.02, "no benefit (offload $\\approx$ per-request work)", fontsize=7.2, color="#777", va="bottom")
     ax.set_xticks(kb); ax.set_xticklabels(["4K","8K","16K","32K","64K","128K","256K","512K","1M","2M","4M","8M"], fontsize=7.5)
     ax2 = ax.twinx()                                   # real single-op GPU latency
     ax2.plot(kb, lat, "-s", color=AMBER, lw=1.8, ms=5, label="GPU latency")
@@ -307,11 +307,11 @@ def fig_correctness():
     x = np.arange(2); w=0.36
     ax.bar(x-w/2, det,  w, color=SLATE, ec=INK, lw=1.0, label="detector (overlapped)")
     ax.bar(x+w/2, lock, w, color=AMBER, ec=INK, lw=1.0, label="lock (serialized)")
-    ax.set_ylim(0, 30)
+    ax.set_ylim(0, 37)
     ax.set_xticks(x); ax.set_xticklabels(["high\ncontention","low\ncontention"])
     ax.set_ylabel("throughput  (K req/s)")
-    ax.text(0, 25.7, "1.8×", ha="center", fontsize=10, color=SLATE, fontweight="bold")
-    ax.text(1, 24.9, "1.7×", ha="center", fontsize=10, color=SLATE, fontweight="bold")
+    ax.text(0-w/2, 25.7, "1.8×", ha="center", fontsize=10, color=SLATE, fontweight="bold")
+    ax.text(1-w/2, 24.9, "1.7×", ha="center", fontsize=10, color=SLATE, fontweight="bold")
     ax.legend(fontsize=7.6, loc="upper right", frameon=True)
     ax.set_title("Detector keeps offloads overlapped", fontsize=9.5)
     ax.grid(True, axis="y", ls=":", lw=0.5, color="#cfd5e0")
@@ -383,7 +383,8 @@ def fig_classifier():
     ax.text(3, 12966*1.4, "+ io_uring\n→ the wall", ha="center", fontsize=9, color=RED, fontweight="bold")
     ax.axhline(100, color="#888", ls="--", lw=1.0)
     ax.text(0.0, 130, "fiberizable", fontsize=9, color=TEAL, va="bottom", fontweight="bold")
-    ax.text(3.0, 130, "sub-libc wall", fontsize=9, color=RED, va="bottom", ha="center", fontweight="bold")
+    ax.text(3.0, 130, "sub-libc wall", fontsize=9, color=RED, va="bottom", ha="center", fontweight="bold",
+            bbox=dict(boxstyle="round,pad=0.25", fc="white", ec="none", alpha=0.9), zorder=5)
     ax.grid(True, axis="y", ls=":", lw=0.5, color="#cfd5e0")
     ax.set_title("Futex density predicts whether a binary can be fiberized", loc="left", fontsize=10.5)
     save(fig, "fig_classifier")
@@ -396,23 +397,23 @@ def fig_recipe():
     fig, ax = plt.subplots(figsize=(6.5, 2.5))
     ax.set_xlim(0, 12); ax.set_ylim(1.55, 7.0); ax.axis("off")
     # the handler reaches the offload
-    box(ax, 0.3, 4.6, 2.5, 1.6, fc=SLATE, ec=INK, text="handler reaches\nthe offload", fs=9.5, tc="white", round=0.07)
+    box(ax, 0.3, 4.6, 2.4, 1.6, fc=SLATE, ec=INK, text="handler reaches\nthe offload", fs=9, tc="white", round=0.07)
     # step 1: submit
-    box(ax, 4.2, 4.9, 3.0, 1.5, fc="white", ec=GREEN, text="1. submit to a\nbackground executor", fs=9, lw=1.6, round=0.07)
-    arrow(ax, (2.8, 5.4), (4.2, 5.6), color=GREEN)
+    box(ax, 3.9, 4.9, 3.5, 1.5, fc="white", ec=GREEN, text="1. submit to a\nbackground executor", fs=8.5, lw=1.6, round=0.07)
+    arrow(ax, (2.7, 5.4), (3.9, 5.6), color=GREEN)
     # device
-    box(ax, 8.6, 4.9, 3.0, 1.5, fc=AMBER, ec=INK, text="accelerator runs\nthe offload", fs=9, tc="white", round=0.07)
-    arrow(ax, (7.2, 5.6), (8.6, 5.6), color=AMBER)
+    box(ax, 8.5, 4.9, 3.2, 1.5, fc=AMBER, ec=INK, text="accelerator runs\nthe offload", fs=8.5, tc="white", round=0.07)
+    arrow(ax, (7.4, 5.65), (8.5, 5.65), color=AMBER)
     # step 2: suspend
-    box(ax, 4.2, 2.6, 3.0, 1.5, fc="white", ec=PURPLE, text="2. suspend the request\n(server's own primitive)", fs=9, lw=1.6, round=0.07)
-    arrow(ax, (1.55, 4.6), (4.4, 4.1), color=PURPLE, rad=-0.2)
+    box(ax, 3.9, 2.6, 3.5, 1.5, fc="white", ec=PURPLE, text="2. suspend the request\n(server's own primitive)", fs=8.5, lw=1.6, round=0.07)
+    arrow(ax, (1.5, 4.6), (4.1, 4.1), color=PURPLE, rad=-0.2)
     # event loop stays free
-    box(ax, 0.3, 2.5, 2.5, 1.5, fc=LIGHT, ec=TEAL, text="loop serves\nother requests", fs=9, lw=1.5, round=0.07)
-    arrow(ax, (2.8, 3.2), (4.2, 3.3), color=TEAL, ls="--")
+    box(ax, 0.3, 2.5, 2.4, 1.5, fc=LIGHT, ec=TEAL, text="loop serves\nother requests", fs=8.5, lw=1.5, round=0.07)
+    arrow(ax, (2.7, 3.2), (3.9, 3.3), color=TEAL, ls="--")
     # step 3: resume
-    box(ax, 8.6, 2.6, 3.0, 1.5, fc="white", ec=SLATE, text="3. resume + reply\non completion", fs=9, lw=1.6, round=0.07)
+    box(ax, 8.5, 2.6, 3.2, 1.5, fc="white", ec=SLATE, text="3. resume + reply\non completion", fs=8.5, lw=1.6, round=0.07)
     arrow(ax, (10.1, 4.9), (10.1, 4.1), color=SLATE)
-    arrow(ax, (8.6, 3.3), (7.2, 3.3), color=SLATE, ls="-")
+    arrow(ax, (8.5, 3.35), (7.4, 3.35), color=SLATE, ls="-")
     ax.text(6.0, 6.72, "The minimal-edit recipe: route the offload through the server's existing suspend/resume machinery",
             ha="center", fontsize=10, fontweight="bold", color=INK)
     ax.text(6.0, 1.85, "18–112 lines added, 0–1 modified — the machinery already exists; one only reroutes the offload.",
@@ -527,8 +528,8 @@ def fig_positioning():
     # our coverage region: low modification, broad
     ax.add_patch(FancyBboxPatch((0.3, 4.3), 6.6, 5.0, boxstyle="round,pad=0.02,rounding_size=0.2",
                  fc="#dce6f2", ec=SLATE, lw=1.8, alpha=0.55, zorder=1))
-    ax.text(3.4, 8.7, "This paper:\ntransparent $\\to$ minimal-edit\n(0–112 lines, 10 server types)",
-            ha="center", fontsize=9.5, color=SLATE, fontweight="bold", zorder=3)
+    ax.text(3.6, 9.0, "This paper:\ntransparent $\\to$ minimal-edit\n(0–112 lines, 10 server types)",
+            ha="center", va="top", fontsize=9.5, color=SLATE, fontweight="bold", zorder=3)
     def pt(x,y,label,c,dx=0,dy=10,ha="center"):
         ax.scatter(x,y,s=90,color=c,edgecolor="white",lw=1.2,zorder=4)
         ax.annotate(label,(x,y),textcoords="offset points",xytext=(dx,dy),ha=ha,fontsize=8.5,color=INK)
@@ -587,8 +588,6 @@ def fig_headline():
     y = np.arange(len(names))
     ax.barh(y, vals, color=cols, ec=INK, lw=0.9, height=0.68, zorder=3)
     ax.axvline(1.0, color="#999", ls="--", lw=1.0, zorder=2)
-    ax.text(0.96, len(names)-0.4, "sync", fontsize=6.4, color="#777",
-            ha="right", va="top")
     for yi, v in zip(y, vals):
         ax.text(v + 0.05, yi, f"{v:.2f}×", va="center", ha="left",
                 fontsize=7.8, fontweight="bold", color=INK)
