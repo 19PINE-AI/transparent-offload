@@ -149,8 +149,8 @@ def fig_spectrum():
     handles = [mpatches.Patch(color=SLATE, label="single event loop"),
                mpatches.Patch(color=TEAL, label="event loop + pool"),
                mpatches.Patch(color=GREEN, label="thread / goroutine pool"),
-               mpatches.Patch(color=AMBER, label="per-connection DB (intra-query)"),
-               mpatches.Patch(color=PURPLE, label="proxy (offload agent)")]
+               mpatches.Patch(color=PURPLE, label="proxy (offload agent)"),
+               mpatches.Patch(color=AMBER, label="per-connection DB (intra-query)")]
     ax.legend(handles=handles, fontsize=7.6, loc="upper right", frameon=True, framealpha=0.96)
     save(fig, "fig_spectrum")
 
@@ -523,8 +523,8 @@ def fig_headline():
     handles = [mpatches.Patch(color=SLATE,  label="event loop"),
                mpatches.Patch(color=TEAL,   label="loop + pool"),
                mpatches.Patch(color=GREEN,  label="thread pool"),
-               mpatches.Patch(color=AMBER,  label="per-conn DB"),
-               mpatches.Patch(color=PURPLE, label="proxy")]
+               mpatches.Patch(color=PURPLE, label="proxy"),
+               mpatches.Patch(color=AMBER,  label="per-conn DB")]
     # legend tucked into the empty bottom-right corner so it never covers a bar
     ax.legend(handles=handles, fontsize=6.3, loc="lower right", frameon=True,
               framealpha=0.95, borderpad=0.35, labelspacing=0.28,
