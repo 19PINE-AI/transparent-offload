@@ -55,7 +55,7 @@
 }
 \lstset{style=codestyle}
 
-\title{Fine-Grained Computation Offload for Event-Driven Applications}
+\title{Fine-Grained Computation Offload for\\Off-the-Shelf Servers in Tens of Lines}
 
 \author{
   Bojie Li \\
@@ -63,38 +63,38 @@
 }
 
 \date{}
-\runningtitle{Fine-Grained Computation Offload for Event-Driven Applications}
+\runningtitle{Fine-Grained Computation Offload in Tens of Lines}
 
 \begin{document}
 \maketitle
 
 \begin{abstract}
-Hardware accelerators now sit on the critical path of online serving: GPUs, TPUs, FPGAs, and
-increasingly \emph{remote} services such as hardware security modules, post-quantum cryptography, and
-inference servers. While the accelerator works, the calling context stalls. For \emph{fine-grained}
-offloads (microseconds to a few milliseconds), the classic responses both fall short: a context
-switch adds a wakeup latency comparable to the offload, and a busy-wait wastes the core. The
-principled fix is to \emph{overlap} the offload with other useful work, but this requires injecting
-concurrency into the application. The real question is \emph{how much the application must change}.
+Hardware accelerators now sit on the critical path of online serving---GPUs, FPGAs, and
+increasingly \emph{remote} services such as hardware security modules, post-quantum KEMs, and
+inference servers. For \emph{fine-grained} offloads (microseconds to a few milliseconds) the
+classic responses to the resulting stall both fail: a context switch costs as much as the offload,
+and a busy-wait burns the core. Overlapping the offload with other requests is the fix, and prior
+systems obtain it by \emph{adding} concurrency: an async-framework rewrite, a new runtime or
+dataplane OS, or a hand-tuned point integration.
 
-We study this across real, off-the-shelf servers and find a \emph{spectrum}. At one extreme, an
-\texttt{LD\_PRELOAD} M:N fiber runtime overlaps the offload with \emph{zero} source modification, but
-works only for thread-per-connection servers and hits three architectural walls: synchronization
-below libc, thread identity in native thread-local storage, and per-request CPU that already exceeds
-the offload. At the other extreme, a \emph{few lines} at the offload site route it through the
-application's own concurrency and work everywhere. Across ten servers spanning every
-concurrency model the change is \textbf{18--112 lines added and 0--1 modified}, and real overlap lands
-at \textbf{$1.2$--$5.4\times$} ($17.3\times$ for the transparent runtime), all measured
-on real hardware. A simple model predicts both the speedup and the code cost from two properties: the
-server's concurrency model and the offload's weight relative to per-request work, and the win is
-bounded at both ends, by the accelerator's throughput and by the server's own overlap capacity. A
-transparent page-protection conflict detector preserves correctness when the overlapped offload
-mutates shared state, validated on stock Redis.
+We observe that the concurrency already exists: serving concurrent requests \emph{is} suspending
+and resuming them, so every server ships the machinery overlap needs. Overlap is then a
+\emph{routing} problem, not a rewrite problem: submit the offload to an executor, suspend the
+request with the server's own deferred-response primitive, resume it on completion. Across ten
+off-the-shelf servers spanning every production concurrency model, this recipe takes \textbf{22--138
+lines added, at most one modified}, and recovers \textbf{$1.2$--$5.4\times$} on real hardware; the
+server's concurrency model and the offload's weight predict both numbers in advance, and the win
+is bounded by device throughput and the server's own overlap capacity. At the limit, an
+\texttt{LD\_PRELOAD} fiber runtime injects the reroute into an unmodified thread-per-connection
+binary ($17.3\times$) within a characterized envelope. Rerouting suspends
+run-to-completion atomicity; a measured taxonomy confines the hazard to unlocked shared
+aggregates, and a transparent page-protection detector guards exactly those, validated on stock
+Redis.
 \end{abstract}
 
 \begin{center}
 \small
-Code: \url{https://github.com/bojieli/transparent-offload} \\[2pt]
+Code: \url{https://github.com/19PINE-AI/transparent-offload} \\[2pt]
 Website: \url{https://01.me/research/transparent-offload}
 \end{center}
 \vspace{-0.5em}
@@ -102,9 +102,10 @@ Website: \url{https://01.me/research/transparent-offload}
 \begin{figure}[H]
   \centering
   \includegraphics[width=\linewidth]{figs/fig_headline.pdf}
-  \caption{The headline result. A few lines of overlap recover $1.2$--$3.5\times$ over a synchronous
-    offload across ten servers (real GPU, 1\,MiB AES; up to $5.4\times$ at $8$\,MiB); the transparent
-    runtime reaches $17.3\times$ with zero edits. Color marks the concurrency model.}
+  \caption{The headline result. Rerouting the offload through each server's own concurrency
+    recovers $1.3$--$3.5\times$ across ten servers (real GPU AES, $1$\,MiB; up to $5.4\times$ at
+    $8$\,MiB; the databases pipeline a launch-bound op); zero-edit rerouting from outside the
+    binary reaches $17.3\times$ (\S\ref{sec:transparent}). Color marks the concurrency model.}
   \label{fig:headline}
 \end{figure}
 

@@ -39,13 +39,13 @@ change too. Both are "minimal"; the first is strictly cleaner.
 | **Redis** | 6.0.16 (stock binary) | single event loop | loadable module | 83 | **0** | 26,150 rps | 125,000 rps | **4.8×** (G) |
 | **nginx** | 1.18.0 (from source) | event loop + thread pool | addon module | 112 | **0** | 23,137 rps | 120,997 rps | **5.2×** (G) |
 | **memcached** | 1.6.18 (from source) | event loop (libevent) | **source patch** (3 files) | 70 | **1** | 27,191 ops/s | 102,226 ops/s | **3.8×** (G) |
-| **Node.js** | 22.11.0 | single event loop (libuv) | native addon (N-API) | 33 | **0** | 906 rps | 22,440 rps | **24.8×** (H) |
+| **Node.js** | 22.11.0 | single event loop (libuv) | native addon (N-API) | 34 | **0** | 906 rps | 22,440 rps | **24.8×** (H) |
 | **Python** | 3.10 (asyncio/aiohttp) | single event loop | ctypes (no build) | 22 | **0** | 921 rps | 12,745 rps | **13.8×** (H) |
 | **Apache** | 2.4.52 | thread pool (mpm_worker) | module (apxs) | 27 | **0** | 942 rps¹ | 55,463 rps¹ | **59×** scaling (H) |
 | **Go** | 1.18 (net/http) | goroutine runtime | cgo, **no async code** | 28 | **0** | 956 rps¹ | 56,889 rps¹ | **59×** scaling (H) |
-| **Postgres** | 14.23 (stock binary) | process-per-connection | C extension | 30 | **0** | 254 ms | 1.8 ms | **141×** (P, intra-query) |
+| **Postgres** | 14.23 (stock binary) | process-per-connection | C extension | 42 | **0** | 254 ms | 1.8 ms | **141×** (P, intra-query) |
 | **MariaDB** | 10.6.23 (stock binary) | thread-per-connection | UDF (`CREATE FUNCTION`) | 34 | **0** | 254 ms | 1.2 ms | **212×** (P, intra-query) |
-| **HAProxy** | 2.4.30 | event-loop proxy | **SPOE** + Python SPOA agent | 18³ | **0** | 499 rps | 6,644 rps | **13.3×** (H) |
+| **HAProxy** | 2.4.30 | event-loop proxy | **SPOE** + Python SPOA agent | 21³ | **0** | 499 rps | 6,644 rps | **13.3×** (H) |
 | **Envoy** | — | event-loop proxy | native **ext_proc / WASM** | — | **0** | — | — | native async-offload engine² |
 
 `+lines` = lines added, `~mod` = existing lines modified. (G) = real GPU AES (`libaccel_gpu.so`,
@@ -54,7 +54,8 @@ models an HSM / PQC / remote-inference round-trip). `failed=0` in every event-lo
 ¹ Apache/Go have no single event loop to block; "sync" is c=1 (serial), "async" is c=64 — the win
 is the **thread/goroutine pool overlapping the offload across requests** (59× concurrency scaling),
 **0 async code**. ² Envoy ships a native async-offload engine (ext_proc / WASM); not built here.
-³ HAProxy uses **SPOE** with a real **Python SPOA agent** (18-line `spoa_agent.py`, 0 HAProxy edits):
+³ HAProxy uses **SPOE** with a real **Python SPOA agent** (21-line `spoa_agent.py`, 0 HAProxy edits;
+the GIL-free C agent `spoa_agent.c` used for the real-GPU 2.1× result is 138 lines):
 the agent offloads on a thread pool while HAProxy's event loop stays free — a serial agent (1
 worker) does 499 rps, the overlapping agent (64 workers) does 6,644 rps = **13.3×**.
 
@@ -94,7 +95,7 @@ repeated-call pattern, so for nginx we report only the real-GPU number above.)
 ### Postgres & MariaDB — process/thread-per-connection: intra-query offload pipelining
 These overlap *across connections* for free (separate backends), so the edit-based win is
 **intra-query offload pipelining**: a C extension / UDF where `accel_sync(n)` issues n offloads
-serially and `accel_async(n)` keeps all n in flight (**0 core edits**, ~30–34 lines). The win is set
+serially and `accel_async(n)` keeps all n in flight (**0 core edits**, 34–42 lines). The win is set
 by the offload: for fast launch-bound GPU AES it's modest (Postgres 1.28×, MariaDB ~1.9×), but for a
 **high-latency parallel offload** (~1 ms, many in-flight — an HSM sign, a PQC KEM, a remote inference
 round-trip), pipelining 256 offloads in one query is dramatic:

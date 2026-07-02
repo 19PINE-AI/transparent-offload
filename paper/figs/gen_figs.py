@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Generate all figures for 'Fine-Grained Computation Offload for Event-Driven Applications'.
+"""Generate all figures for 'Fine-Grained Computation Offload for Off-the-Shelf Servers
+in Tens of Lines'.
 Clean, single-column, NeurIPS-ish style. Vector PDF output."""
 import matplotlib
 matplotlib.use("Agg")
@@ -113,17 +114,17 @@ def fig_spectrum():
     # REAL-hardware speedups only (real GPU). Servers whose dramatic numbers needed a
     # latency-bound offload are shown by line-count at the baseline (integration built;
     # measured at y=1 on the real-GPU AES path or pending a real remote offload).
-    pts = [   # (app, lines_added, speedup, regime_color, dx, dy, ha) -- real GPU, 1MB AES
+    pts = [   # (app, lines_added, speedup, regime_color, dx, dy, ha) -- real GPU AES
         ("Redis", 83, 3.01, SLATE, 9, 2, "left"),
-        ("Node.js", 33, 2.54, SLATE, 9, 1, "left"),
+        ("Node.js", 34, 2.54, SLATE, 9, 1, "left"),
         ("Python", 22, 2.37, SLATE, -9, 5, "right"),
         ("nginx", 112, 2.74, TEAL, 0, -14, "center"),
         ("memcached", 70, 2.93, TEAL, 0, 10, "center"),
         ("Go", 28, 3.01, GREEN, -9, 3, "right"),
         ("Apache", 27, 3.45, GREEN, 0, 9, "center"),
-        ("Postgres", 30, 1.28, AMBER, 0, -15, "center"),
+        ("Postgres", 42, 1.28, AMBER, 0, -15, "center"),
         ("MariaDB", 34, 1.9, AMBER, 9, -3, "left"),
-        ("HAProxy", 18, 2.10, PURPLE, -9, -11, "right"),
+        ("HAProxy", 138, 2.10, PURPLE, 0, -15, "center"),   # standalone C SPOE agent
     ]
     fig, ax = plt.subplots(figsize=(6.6, 4.0))
     for (name, x, y, c, dx, dy, ha) in pts:
@@ -140,7 +141,7 @@ def fig_spectrum():
     ax.text(150, 1.03, "no gain", fontsize=7.5, color="#777", va="bottom", ha="right")
     ax.set_xscale("log"); ax.set_yscale("log")
     ax.set_xlim(1, 200); ax.set_ylim(0.8, 22)
-    ax.set_xlabel("lines added to the application  (0–112)")
+    ax.set_xlabel("lines added to the application  (0–138)")
     ax.set_ylabel("speedup over sync offload  (×, real GPU)")
     ax.grid(True, which="both", ls=":", lw=0.6, color="#cfd5e0", zorder=0)
     ax.set_xticks([1, 10, 100]); ax.set_xticklabels(["~0", "10", "100"])
@@ -154,27 +155,6 @@ def fig_spectrum():
     save(fig, "fig_spectrum")
 
 
-# =====================================================================
-# Fig 3 — a synchronous offload throttles the whole event loop
-# =====================================================================
-def fig_eventloop():
-    apps = ["Redis", "Node.js", "Python"]
-    sync = [971, 906, 921]
-    asyn = [30675, 22440, 12745]
-    fig, ax = plt.subplots(figsize=(6.4, 3.3))
-    x = np.arange(len(apps)); w = 0.36
-    b1 = ax.bar(x - w/2, sync, w, color=RED, ec=INK, lw=1.0, label="synchronous (blocks the loop)")
-    b2 = ax.bar(x + w/2, asyn, w, color=SLATE, ec=INK, lw=1.0, label="async (few-line overlap)")
-    ax.set_yscale("log")
-    ax.set_ylim(300, 200000)
-    ax.set_xticks(x); ax.set_xticklabels(apps, fontsize=11)
-    ax.set_ylabel("requests / second  (log)")
-    for xi, s, a in zip(x, sync, asyn):
-        ax.text(xi + w/2, a*1.18, f"{a/s:.0f}×", ha="center", fontsize=11, fontweight="bold", color=SLATE)
-    ax.legend(fontsize=9.5, loc="upper left", frameon=True)
-    ax.grid(True, axis="y", ls=":", lw=0.6, color="#cfd5e0")
-    ax.set_title("Single event loop, 1 ms offload: a few lines recover 14–31×", loc="left", fontsize=11)
-    save(fig, "fig_eventloop")
 
 
 # =====================================================================
@@ -199,7 +179,7 @@ def fig_regimes():
         box(ax, x, 4.6, w, 1.8, fc="white", ec=col, text="", round=0.08, lw=1.6)
         ax.text(x+w/2, 5.5, win, ha="center", va="center", color=INK, fontsize=8.2, fontweight="bold")
         ax.text(x+w/2, 4.05, ex, ha="center", va="center", color="#5b6577", fontsize=7.3, style="italic")
-    ax.text(5.0, 10.0, "concurrency model  →  predicted minimal-edit win", ha="center",
+    ax.text(5.0, 10.0, "concurrency model  →  predicted rerouting win", ha="center",
             fontsize=11, fontweight="bold", color=INK)
     ax.text(5.0, 3.2, "Win grows with offload weight; it pays only when the offload outweighs per-request CPU.",
             ha="center", fontsize=8.6, color="#5b6577", style="italic")
@@ -321,55 +301,8 @@ def fig_correctness():
     save(fig, "fig_correctness")
 
 
-# =====================================================================
-# Fig 9 — intra-query offload pipelining in a database (gantt)
-# =====================================================================
-def fig_dbpipeline():
-    fig, axes = plt.subplots(2, 1, figsize=(6.4, 3.0), gridspec_kw=dict(hspace=0.7))
-    N = 16  # draw 16 to represent 256
-    # serial: staircase
-    ax = axes[0]
-    for i in range(N):
-        ax.add_patch(Rectangle((i, 0.2), 0.92, 0.6, fc=AMBER, ec=INK, lw=0.5))
-    ax.set_xlim(0, N+2.5); ax.set_ylim(0, 1.1)
-    ax.text(N+0.4, 0.5, "254 ms", va="center", fontsize=11, fontweight="bold", color=RED)
-    ax.set_title("serial  accel_sync(256):  one offload after another", loc="left", fontsize=10.5)
-    # pipelined: all in flight at once (a vertical stack of short, parallel bars)
-    ax = axes[1]
-    M = 12
-    for i in range(M):
-        ax.add_patch(Rectangle((0.2, i*0.085+0.08), 1.5, 0.055, fc=SLATE, ec="white", lw=0.6))
-    ax.add_patch(FancyArrowPatch((0.1, 0.06), (0.1, M*0.085+0.06), arrowstyle="<->",
-                 mutation_scale=8, lw=1.3, color=RED))
-    ax.set_xlim(0, N+2.5); ax.set_ylim(0, 1.15)
-    ax.text(1.95, M*0.085/2+0.06, "1.8 ms", va="center", ha="left", fontsize=11, fontweight="bold", color=SLATE)
-    ax.text(9.2, M*0.085/2+0.06, "= 141× faster  (all 256 offloads in flight at once)", va="center",
-            fontsize=10, color=INK, fontweight="bold")
-    ax.set_title("pipelined  accel_async(256):  all offloads in flight", loc="left", fontsize=10.5)
-    for ax in axes:
-        ax.set_yticks([]); ax.set_xticks([])
-        for s in ax.spines.values(): s.set_visible(False)
-    save(fig, "fig_dbpipeline")
 
 
-# =====================================================================
-# Fig 10 — HAProxy with a real offload agent (SPOE)
-# =====================================================================
-def fig_proxy():
-    fig, ax = plt.subplots(figsize=(6.3, 2.7))
-    labels = ["serial agent\n(1 worker)", "overlapping agent\n(64 workers)"]
-    rps = [499, 6644]
-    bars = ax.barh(labels, rps, color=[RED, PURPLE], ec=INK, lw=1.0, height=0.55)
-    ax.set_xlim(0, 7800)
-    for y,(v) in enumerate(rps):
-        ax.text(v+150, y, f"{v:,} rps", va="center", fontsize=11, fontweight="bold",
-                color=RED if y==0 else PURPLE)
-    ax.text(6644*0.5, 1.32, "13.3×", ha="center", fontsize=12, fontweight="bold", color=PURPLE)
-    ax.set_xlabel("requests / second")
-    ax.set_title("HAProxy + SPOE: a real offload agent overlaps while the proxy keeps serving",
-                 loc="left", fontsize=10)
-    ax.grid(True, axis="x", ls=":", lw=0.5, color="#cfd5e0")
-    save(fig, "fig_proxy")
 
 
 # =====================================================================
@@ -400,7 +333,7 @@ def fig_classifier():
 
 
 # =====================================================================
-# Fig 12 — the minimal-edit recipe (schematic)
+# Fig 12 — the rerouting recipe (schematic)
 # =====================================================================
 def fig_recipe():
     fig, ax = plt.subplots(figsize=(6.5, 2.5))
@@ -423,9 +356,9 @@ def fig_recipe():
     box(ax, 8.5, 2.6, 3.2, 1.5, fc="white", ec=SLATE, text="3. resume + reply\non completion", fs=8.5, lw=1.6, round=0.07)
     arrow(ax, (10.1, 4.9), (10.1, 4.1), color=SLATE)
     arrow(ax, (8.5, 3.35), (7.4, 3.35), color=SLATE, ls="-")
-    ax.text(6.0, 6.72, "The minimal-edit recipe: route the offload through the server's existing suspend/resume machinery",
+    ax.text(6.0, 6.72, "The recipe: reroute the offload through the server's existing suspend/resume machinery",
             ha="center", fontsize=10, fontweight="bold", color=INK)
-    ax.text(6.0, 1.85, "18–112 lines added, 0–1 modified — the machinery already exists; one only reroutes the offload.",
+    ax.text(6.0, 1.85, "22–138 lines added, at most 1 modified — the machinery already exists; one only reroutes the offload.",
             ha="center", fontsize=8.7, color="#5b6577", style="italic")
     save(fig, "fig_recipe")
 
@@ -537,7 +470,7 @@ def fig_positioning():
     # our coverage region: low modification, broad
     ax.add_patch(FancyBboxPatch((0.3, 4.3), 6.6, 5.0, boxstyle="round,pad=0.02,rounding_size=0.2",
                  fc="#dce6f2", ec=SLATE, lw=1.8, alpha=0.55, zorder=1))
-    ax.text(3.6, 9.0, "This paper:\ntransparent $\\to$ minimal-edit\n(0–112 lines, 10 server types)",
+    ax.text(3.6, 9.0, "This paper: rerouting via\nexisting concurrency\n(0–138 lines, 10 server types)",
             ha="center", va="top", fontsize=9.5, color=SLATE, fontweight="bold", zorder=3)
     def pt(x,y,label,c,dx=0,dy=10,ha="center"):
         ax.scatter(x,y,s=90,color=c,edgecolor="white",lw=1.2,zorder=4)
@@ -551,58 +484,41 @@ def fig_positioning():
     save(fig, "fig_positioning")
 
 
-def fig_blocksize():
-    # Measured (idle GPU, Python 32-thread executor): apps/aes_blocksize_py_results.csv
-    kb  = [4,8,16,32,64,128,256,512,1024,2048,4096,8192]
-    lat = [46.4,47.0,51.4,60.3,70.2,92.7,126.5,191.8,361.6,653.6,1188.1,2258.6]
-    spd = [1.24,1.26,1.25,1.25,1.31,1.42,1.53,1.83,2.37,2.96,3.83,5.41]
-    fig, ax = plt.subplots(figsize=(6.6, 3.4))
-    ax.plot(kb, spd, "-o", color=TEAL, lw=2.3, ms=6, label="speedup (async/sync)")
-    ax.set_xscale("log", base=2); ax.set_ylim(1.0, 5.8)
-    ax.set_xlabel("AES block size")
-    ax.set_ylabel("speedup  (×)", color=TEAL)
-    ax.axhline(1.0, color="#999", ls="--", lw=1.0)
-    ax.set_xticks(kb); ax.set_xticklabels(["4K","8K","16K","32K","64K","128K","256K","512K","1M","2M","4M","8M"], fontsize=7.5)
-    ax2 = ax.twinx()                                   # second axis: real single-op GPU latency
-    ax2.plot(kb, lat, "-s", color=AMBER, lw=1.8, ms=5, label="GPU latency")
-    ax2.set_yscale("log"); ax2.set_ylabel("single-op GPU latency  (µs)", color=AMBER)
-    ax.grid(True, which="both", ls=":", lw=0.5, color="#cfd5e0")
-    ax.set_title("AES block-size sweep on a single event loop (real GPU, idle)", loc="left", fontsize=10.5)
-    ax.legend(loc="upper left", fontsize=8.5, frameon=True)
-    ax2.legend(loc="lower right", fontsize=8.5, frameon=True)
-    save(fig, "fig_blocksize")
 
 
 # =====================================================================
 # Headline — per-server speedup over synchronous offload (page-1 teaser)
 # =====================================================================
 def fig_headline():
-    # Same real-GPU 1MB AES speedups as the spectrum (Fig. fig_spectrum), shown as a
+    # Same real-GPU AES speedups as the spectrum (Fig. fig_spectrum), shown as a
     # compact bar chart so it can ride on the abstract page as the headline result.
-    data = [   # (app, speedup, regime_color)
-        ("Apache",    3.45, GREEN),
-        ("Redis",     3.01, SLATE),
-        ("Go",        3.01, GREEN),
-        ("memcached", 2.93, TEAL),
-        ("nginx",     2.74, TEAL),
-        ("Node.js",   2.54, SLATE),
-        ("Python",    2.37, SLATE),
-        ("HAProxy",   2.10, PURPLE),
-        ("MariaDB",   1.90, AMBER),
-        ("Postgres",  1.28, AMBER),
+    # (1 MiB blocks; the two databases pipeline a launch-bound op intra-query, and
+    # MariaDB's source records ~1.9x, so its label is printed as approximate.)
+    data = [   # (app, speedup, label, regime_color)
+        ("Apache",    3.45, "3.45×", GREEN),
+        ("Redis",     3.01, "3.01×", SLATE),
+        ("Go",        3.01, "3.01×", GREEN),
+        ("memcached", 2.93, "2.93×", TEAL),
+        ("nginx",     2.74, "2.74×", TEAL),
+        ("Node.js",   2.54, "2.54×", SLATE),
+        ("Python",    2.37, "2.37×", SLATE),
+        ("HAProxy",   2.10, "2.10×", PURPLE),
+        ("MariaDB",   1.90, "~1.9×", AMBER),
+        ("Postgres",  1.28, "1.28×", AMBER),
     ]
     data = data[::-1]   # largest on top
-    names = [d[0] for d in data]; vals = [d[1] for d in data]; cols = [d[2] for d in data]
+    names = [d[0] for d in data]; vals = [d[1] for d in data]
+    labs = [d[2] for d in data]; cols = [d[3] for d in data]
     fig, ax = plt.subplots(figsize=(6.6, 1.5))
     y = np.arange(len(names))
     ax.barh(y, vals, color=cols, ec=INK, lw=0.9, height=0.68, zorder=3)
     ax.axvline(1.0, color="#999", ls="--", lw=1.0, zorder=2)
-    for yi, v in zip(y, vals):
-        ax.text(v + 0.05, yi, f"{v:.2f}×", va="center", ha="left",
+    for yi, v, lab in zip(y, vals, labs):
+        ax.text(v + 0.05, yi, lab, va="center", ha="left",
                 fontsize=7.8, fontweight="bold", color=INK)
     ax.set_yticks(y); ax.set_yticklabels(names, fontsize=8.2)
     ax.set_xlim(0, 4.05); ax.set_ylim(-0.6, len(names)-0.4)
-    ax.set_xlabel("speedup over synchronous offload  (×, real GPU, 1 MiB AES)", fontsize=9)
+    ax.set_xlabel("speedup over synchronous offload  (×, real GPU AES)", fontsize=9)
     ax.grid(True, axis="x", ls=":", lw=0.5, color="#cfd5e0", zorder=0)
     handles = [mpatches.Patch(color=SLATE,  label="event loop"),
                mpatches.Patch(color=TEAL,   label="loop + pool"),

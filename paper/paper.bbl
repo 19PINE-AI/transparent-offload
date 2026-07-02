@@ -18,10 +18,10 @@ Cristiana Amza, Alan~L. Cox, Sandhya Dwarkadas, Pete Keleher, Honghui Lu,
 \newblock {TreadMarks}: Shared memory computing on networks of workstations.
 \newblock \emph{IEEE Computer}, 29\penalty0 (2):\penalty0 18--28, 1996.
 
-\bibitem[{Apache Software Foundation}(2024)]{apache}
+\bibitem[{Apache Software Foundation}(2026)]{apache}
 {Apache Software Foundation}.
 \newblock Apache {HTTP} server.
-\newblock \url{https://httpd.apache.org/}, 2024.
+\newblock \url{https://httpd.apache.org/}, 2026.
 
 \bibitem[Axboe(2019)]{iouring}
 Jens Axboe.
@@ -57,27 +57,27 @@ Daniel Crankshaw, Xin Wang, Giulio Zhou, Michael~J. Franklin, Joseph~E.
 \newblock In \emph{Proceedings of the 14th USENIX Symposium on Networked
   Systems Design and Implementation (NSDI)}, pages 613--627, 2017.
 
-\bibitem[{DPDK Project}(2024)]{dpdk}
+\bibitem[{DPDK Project}(2026)]{dpdk}
 {DPDK Project}.
 \newblock {DPDK}: Data plane development kit.
-\newblock \url{https://www.dpdk.org/}, 2024.
+\newblock \url{https://www.dpdk.org/}, 2026.
 
 \bibitem[Drepper(2011)]{drepper}
 Ulrich Drepper.
 \newblock How to write shared libraries.
 \newblock \url{https://www.akkadia.org/drepper/dsohowto.pdf}, 2011.
 
-\bibitem[{Envoy Project}(2024)]{extproc}
+\bibitem[{Envoy Project}(2026)]{extproc}
 {Envoy Project}.
 \newblock External processing filter ({ext\_proc}).
 \newblock
   \url{https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/ext_proc_filter},
-  2024.
+  2026.
 
-\bibitem[{F5/NGINX}(2024)]{nginx}
+\bibitem[{F5/NGINX}(2026)]{nginx}
 {F5/NGINX}.
 \newblock nginx: Http and reverse proxy server.
-\newblock \url{https://nginx.org/}, 2024.
+\newblock \url{https://nginx.org/}, 2026.
 
 \bibitem[Franke et~al.(2002)Franke, Russell, and Kirkwood]{futexes}
 Hubertus Franke, Rusty Russell, and Matthew Kirkwood.
@@ -91,15 +91,15 @@ Joshua Fried, Zhenyuan Ruan, Amy Ousterhout, and Adam Belay.
 \newblock In \emph{Proceedings of the 14th USENIX Symposium on Operating
   Systems Design and Implementation (OSDI)}, pages 281--297, 2020.
 
-\bibitem[{HAProxy Technologies}(2024{\natexlab{a}})]{haproxy}
+\bibitem[{HAProxy Technologies}(2026{\natexlab{a}})]{haproxy}
 {HAProxy Technologies}.
 \newblock {HAProxy}: The reliable, high-performance {TCP/HTTP} load balancer.
-\newblock \url{https://www.haproxy.org/}, 2024{\natexlab{a}}.
+\newblock \url{https://www.haproxy.org/}, 2026{\natexlab{a}}.
 
-\bibitem[{HAProxy Technologies}(2024{\natexlab{b}})]{spoe}
+\bibitem[{HAProxy Technologies}(2026{\natexlab{b}})]{spoe}
 {HAProxy Technologies}.
 \newblock Stream processing offload engine ({SPOE}) and protocol ({SPOP}).
-\newblock \url{https://www.haproxy.com/documentation/}, 2024{\natexlab{b}}.
+\newblock \url{https://www.haproxy.com/documentation/}, 2026{\natexlab{b}}.
 
 \bibitem[Herlihy and Moss(1993)]{htm}
 Maurice Herlihy and J.~Eliot~B. Moss.
@@ -108,12 +108,12 @@ Maurice Herlihy and J.~Eliot~B. Moss.
 \newblock In \emph{Proceedings of the 20th Annual International Symposium on
   Computer Architecture (ISCA)}, pages 289--300, 1993.
 
-\bibitem[{Intel Corporation}(2024)]{qat}
+\bibitem[{Intel Corporation}(2026)]{qat}
 {Intel Corporation}.
 \newblock Intel quickassist technology ({Intel QAT}).
 \newblock
   \url{https://www.intel.com/content/www/us/en/architecture-and-technology/intel-quick-assist-technology-overview.html},
-  2024.
+  2026.
 
 \bibitem[Jang et~al.(2011)Jang, Han, Han, Moon, and Park]{sslshader}
 Keon Jang, Sangjin Han, Seungyeop Han, Sue Moon, and KyoungSoo Park.
@@ -154,10 +154,10 @@ Bojie Li, Zihao Xiang, Xiaoliang Wang, Han Ruan, Jingbin Zhou, and Kun Tan.
   (APNet)}, pages 1--7. ACM, 2023.
 \newblock \doi{10.1145/3600061.3600063}.
 
-\bibitem[{libuv contributors}(2024)]{libuv}
+\bibitem[{libuv contributors}(2026)]{libuv}
 {libuv contributors}.
 \newblock libuv: Cross-platform asynchronous {I/O}.
-\newblock \url{https://libuv.org/}, 2024.
+\newblock \url{https://libuv.org/}, 2026.
 
 \bibitem[Liu et~al.(2019)Liu, Cui, Schuh, Krishnamurthy, Peter, and
   Gupta]{ipipe}
@@ -167,40 +167,40 @@ Ming Liu, Tianyi Cui, Henry Schuh, Arvind Krishnamurthy, Simon Peter, and Karan
 \newblock In \emph{Proceedings of the 2019 ACM SIGCOMM Conference}, pages
   318--333, 2019.
 
-\bibitem[{MariaDB Foundation}(2024)]{mariadb}
+\bibitem[{MariaDB Foundation}(2026)]{mariadb}
 {MariaDB Foundation}.
 \newblock {MariaDB} server: The open source relational database.
-\newblock \url{https://mariadb.org/}, 2024.
+\newblock \url{https://mariadb.org/}, 2026.
 
-\bibitem[{memcached}(2024)]{memcached}
+\bibitem[{memcached}(2026)]{memcached}
 {memcached}.
 \newblock memcached: A distributed memory object caching system.
-\newblock \url{https://memcached.org/}, 2024.
+\newblock \url{https://memcached.org/}, 2026.
 
 \bibitem[{National Institute of Standards and Technology}(2024)]{mlkem}
 {National Institute of Standards and Technology}.
 \newblock Module-lattice-based key-encapsulation mechanism standard.
 \newblock Technical Report FIPS 203, NIST, 2024.
 
-\bibitem[{NVIDIA Corporation}(2024)]{cudastreams}
+\bibitem[{NVIDIA Corporation}(2026)]{cudastreams}
 {NVIDIA Corporation}.
 \newblock {CUDA} {C++} programming guide: Asynchronous concurrent execution.
-\newblock \url{https://docs.nvidia.com/cuda/cuda-c-programming-guide/}, 2024.
+\newblock \url{https://docs.nvidia.com/cuda/cuda-c-programming-guide/}, 2026.
 
 \bibitem[{OpenJDK}(2023)]{loom}
 {OpenJDK}.
 \newblock {JEP} 444: Virtual threads (project {Loom}).
 \newblock \url{https://openjdk.org/jeps/444}, 2023.
 
-\bibitem[{OpenJS Foundation}(2024)]{nodejs}
+\bibitem[{OpenJS Foundation}(2026)]{nodejs}
 {OpenJS Foundation}.
 \newblock {Node.js}: A {JavaScript} runtime built on {V8}.
-\newblock \url{https://nodejs.org/}, 2024.
+\newblock \url{https://nodejs.org/}, 2026.
 
-\bibitem[{OpenSSL Project}(2024)]{openssl}
+\bibitem[{OpenSSL Project}(2026)]{openssl}
 {OpenSSL Project}.
 \newblock {OpenSSL}: Cryptography and {SSL/TLS} toolkit.
-\newblock \url{https://www.openssl.org/}, 2024.
+\newblock \url{https://www.openssl.org/}, 2026.
 
 \bibitem[Ousterhout et~al.(2019)Ousterhout, Fried, Behrens, Belay, and
   Balakrishnan]{shenango}
@@ -217,11 +217,11 @@ Vivek~S. Pai, Peter Druschel, and Willy Zwaenepoel.
 \newblock In \emph{Proceedings of the USENIX Annual Technical Conference
   (ATC)}, 1999.
 
-\bibitem[{PostgreSQL Global Development Group}(2024)]{postgresql}
+\bibitem[{PostgreSQL Global Development Group}(2026)]{postgresql}
 {PostgreSQL Global Development Group}.
 \newblock {PostgreSQL}: The world's most advanced open source relational
   database.
-\newblock \url{https://www.postgresql.org/}, 2024.
+\newblock \url{https://www.postgresql.org/}, 2026.
 
 \bibitem[Prekas et~al.(2017)Prekas, Kogias, and Bugnion]{zygos}
 George Prekas, Marios Kogias, and Edouard Bugnion.
@@ -230,15 +230,15 @@ George Prekas, Marios Kogias, and Edouard Bugnion.
 \newblock In \emph{Proceedings of the 26th Symposium on Operating Systems
   Principles (SOSP)}, pages 325--341, 2017.
 
-\bibitem[Provos and Mathewson(2024)]{libevent}
+\bibitem[Provos and Mathewson(2026)]{libevent}
 Niels Provos and Nick Mathewson.
 \newblock libevent: An event notification library.
-\newblock \url{https://libevent.org/}, 2024.
+\newblock \url{https://libevent.org/}, 2026.
 
-\bibitem[{Python Software Foundation}(2024)]{cpython}
+\bibitem[{Python Software Foundation}(2026)]{cpython}
 {Python Software Foundation}.
 \newblock {asyncio}: Asynchronous {I/O} in {CPython}.
-\newblock \url{https://docs.python.org/3/library/asyncio.html}, 2024.
+\newblock \url{https://docs.python.org/3/library/asyncio.html}, 2026.
 
 \bibitem[Qin et~al.(2018)Qin, Li, Speiser, Kraft, and Ousterhout]{arachne}
 Henry Qin, Qian Li, Jacqueline Speiser, Peter Kraft, and John Ousterhout.
@@ -246,10 +246,10 @@ Henry Qin, Qian Li, Jacqueline Speiser, Peter Kraft, and John Ousterhout.
 \newblock In \emph{Proceedings of the 13th USENIX Symposium on Operating
   Systems Design and Implementation (OSDI)}, pages 145--160, 2018.
 
-\bibitem[{Redis Ltd.}(2024)]{redis}
+\bibitem[{Redis Ltd.}(2026)]{redis}
 {Redis Ltd.}
 \newblock Redis: An in-memory data store.
-\newblock \url{https://redis.io/}, 2024.
+\newblock \url{https://redis.io/}, 2026.
 
 \bibitem[{RedisAI}(2022)]{redisai}
 {RedisAI}.
@@ -257,21 +257,21 @@ Henry Qin, Qian Li, Jacqueline Speiser, Peter Kraft, and John Ousterhout.
   learning models.
 \newblock \url{https://oss.redis.com/redisai/}, 2022.
 
-\bibitem[{ScyllaDB}(2024)]{seastar}
+\bibitem[{ScyllaDB}(2026)]{seastar}
 {ScyllaDB}.
 \newblock Seastar: A high-performance shared-nothing asynchronous {C++}
   framework.
-\newblock \url{https://seastar.io/}, 2024.
+\newblock \url{https://seastar.io/}, 2026.
 
 \bibitem[{State Threads Library}(2009)]{statethreads}
 {State Threads Library}.
 \newblock State threads library for internet applications.
 \newblock \url{http://state-threads.sourceforge.net/}, 2009.
 
-\bibitem[{The Go Authors}(2024)]{golang}
+\bibitem[{The Go Authors}(2026)]{golang}
 {The Go Authors}.
 \newblock The {Go} programming language: Goroutines and the scheduler.
-\newblock \url{https://go.dev/}, 2024.
+\newblock \url{https://go.dev/}, 2026.
 
 \bibitem[von Behren et~al.(2003)von Behren, Condit, Zhou, Necula, and
   Brewer]{capriccio}
