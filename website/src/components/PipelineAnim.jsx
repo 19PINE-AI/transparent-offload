@@ -1,9 +1,9 @@
 import { COLORS } from '../data'
 
-// Timeline geometry (one shared time axis, revealed by an animated clip "playhead").
+// Timeline geometry (one shared time axis). Sync panel content runs to x=910
+// (three back-to-back requests of 260 each from X0), so the axis ends past that.
 const X0 = 130
-const XMAX = 830
-const DUR = 8 // seconds per loop
+const XMAX = 910
 
 const REQ = [
   { name: 'A', color: COLORS.slate },
@@ -73,17 +73,11 @@ function PanelTitle({ y, text, sub, color }) {
 }
 
 export default function PipelineAnim() {
-  const clipId = 'playclip'
   return (
     <div className="anim-frame">
-      <svg viewBox="0 0 880 430" role="img"
-        aria-label="Animated timeline comparing a synchronous offload, where the CPU stalls, with overlapped offloads, where the CPU processes other requests during each offload.">
+      <svg viewBox="0 0 980 430" role="img"
+        aria-label="Timeline comparing a synchronous offload, where the CPU stalls, with overlapped offloads, where the CPU processes other requests during each offload.">
         <defs>
-          <clipPath id={clipId}>
-            <rect x={X0} y="0" height="430" width="0">
-              <animate attributeName="width" from="0" to={XMAX - X0 + 30} dur={`${DUR}s`} repeatCount="indefinite" />
-            </rect>
-          </clipPath>
           <pattern id="stall" width="8" height="8" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
             <rect width="8" height="8" fill="rgba(176,36,27,0.08)" />
             <line x1="0" y1="0" x2="0" y2="8" stroke="rgba(176,36,27,0.5)" strokeWidth="2.5" />
@@ -97,7 +91,7 @@ export default function PipelineAnim() {
         <Lane y={62} label="CPU" />
         <Lane y={106} label="accelerator" />
 
-        <g clipPath={`url(#${clipId})`}>
+        <g>
           {syncSpans.map((s) => (
             <g key={s.name}>
               <Bar x1={s.pre[0]} x2={s.pre[1]} y={62} color={s.color} label={`pre ${s.name}`} />
@@ -118,7 +112,7 @@ export default function PipelineAnim() {
         </g>
 
         {/* divider */}
-        <line x1="24" y1="168" x2="856" y2="168" stroke="#e3e0d8" strokeWidth="1" />
+        <line x1="24" y1="168" x2="956" y2="168" stroke="#e3e0d8" strokeWidth="1" />
 
         {/* ===== bottom panel: overlapped ===== */}
         <PanelTitle y={200} color={COLORS.slate}
@@ -127,13 +121,13 @@ export default function PipelineAnim() {
         <Lane y={228} label="CPU" />
         <Lane y={272} label="accelerator" />
 
-        <g clipPath={`url(#${clipId})`}>
+        <g>
           {ovCpu.map((seg, i) => (
             <Bar key={i} x1={seg.span[0]} x2={seg.span[1]} y={228}
               color={REQ[seg.r].color} label={`${seg.kind} ${REQ[seg.r].name}`} />
           ))}
           {ovAccel.map((seg, i) => (
-            <Bar key={i} x1={seg.span[0]} x2={seg.span[1]} y={264 + i * 12}
+            <Bar key={i} x1={seg.span[0]} x2={seg.span[1]} y={262 + i * 22}
               color={COLORS.amber} label={`offload ${REQ[seg.r].name}`} h={20} />
           ))}
           <g>
@@ -145,14 +139,6 @@ export default function PipelineAnim() {
               time saved →
             </text>
           </g>
-        </g>
-
-        {/* playhead */}
-        <g>
-          <line x1={X0} y1="46" x2={X0} y2="316" stroke={COLORS.ink} strokeWidth="1.5" opacity="0.55">
-            <animate attributeName="x1" from={X0} to={XMAX + 30} dur={`${DUR}s`} repeatCount="indefinite" />
-            <animate attributeName="x2" from={X0} to={XMAX + 30} dur={`${DUR}s`} repeatCount="indefinite" />
-          </line>
         </g>
 
         {/* time axis */}
