@@ -49,8 +49,8 @@ site, \emph{submit} the work to a background executor, \emph{suspend} the reques
 server's own deferred-response primitive, and \emph{resume} it to reply on completion.
 
 We validate this recipe on \textbf{ten} off-the-shelf servers spanning every concurrency model in
-production use: Redis, nginx, memcached, Node.js, Python/asyncio, Apache, Go, PostgreSQL, MariaDB,
-and HAProxy. Across the ten, the change is \textbf{22--138 lines added and zero or one existing
+production use: Redis, Node.js, Python/asyncio, nginx, memcached, Apache, Go, HAProxy, PostgreSQL,
+and MariaDB. Across the ten, the change is \textbf{22--138 lines added and zero or one existing
 line modified}---the core of the Redis integration is a dozen lines
 (Listing~\ref{lst:redis})---and on real hardware it recovers $1.2$--$5.4\times$ across servers
 and offload weights, with no failed requests (Figure~\ref{fig:headline}). The cost is small for a structural reason, not a lucky one:
@@ -68,28 +68,25 @@ including the ones where overlap does \emph{not} help.
 Two questions remain, and they complete the paper. First, \emph{can the change be zero?} When
 there is no source access at all, the libc symbol boundary is itself a suspension layer: an
 \texttt{LD\_PRELOAD} fiber runtime injects the rerouting from outside an unmodified binary and
-reaches $17.3\times$ on a thread-per-connection server. But transparency extends exactly as far as
-the behavior that flows through the interposed layer, and we characterize the three walls where it
-provably runs out---and give a classifier that predicts, from a binary's syscall profile, which
-side of the wall it is on. Second, \emph{what does rerouting break?} Suspending a handler
-mid-request forfeits the run-to-completion atomicity that event-driven servers silently rely on. A
-measured taxonomy shows the hazard is confined to one pattern---unlocked shared
-aggregates---and a transparent page-protection detector guards exactly that residual, validated on
-stock Redis.
+reaches $17.3\times$ on a thread-per-connection server---within an envelope we characterize
+precisely, because transparency extends exactly as far as the behavior that flows through the
+interposed layer. Second, \emph{what does rerouting break?} Suspending a handler mid-request
+forfeits the run-to-completion atomicity that event-driven servers silently rely on---a hazard we
+measure, scope, and guard.
 
 In summary, this paper makes three contributions:
 \begin{itemize}[leftmargin=1.4em,itemsep=2pt,topsep=2pt]
-  \item \textbf{A thesis and a recipe.} Overlapping a fine-grained offload requires rerouting it
-    through concurrency the server already has, not adding concurrency. One three-step recipe,
+  \item \textbf{An offload-rerouting method.} Overlapping a fine-grained offload requires rerouting it
+    through concurrency the server already has, not adding concurrency. One three-step method,
     instantiated on ten off-the-shelf servers with 22--138 lines added and at most one
     existing line modified,
     recovers $1.2$--$5.4\times$ on real hardware across offload weights (\S\ref{sec:recipe},
     \S\ref{sec:eval}).
-  \item \textbf{A predictive model, including its limits.} Concurrency model and offload weight
+  \item \textbf{A predictive model of speedup and code cost.} Concurrency model and offload weight
     predict the win and the cost in advance (\S\ref{sec:model}); at the zero-edit limit, an
     interposition-envelope principle and a syscall-profile classifier predict where transparent
     rerouting is possible at all (\S\ref{sec:transparent}).
-  \item \textbf{A correctness characterization and guard.} Rerouting breaks run-to-completion
+  \item \textbf{A correctness taxonomy and a transparent guard.} Rerouting breaks run-to-completion
     atomicity; a measured taxonomy confines the hazard to unlocked shared aggregates, and a
     transparent conflict detector protects exactly those with no application changes
     (\S\ref{sec:correctness}).
@@ -100,7 +97,7 @@ In summary, this paper makes three contributions:
 \section{The Fine-Grained Regime and a Predictive Model}
 \label{sec:model}
 
-\paragraph{The regime.}
+\paragraph{The fine-grained regime.}
 An accelerator turns a CPU-bound routine into a device operation: the CPU prepares an input
 buffer, submits it (a kernel launch, a DMA, or a network send), and later collects the result.
 These round-trips span microseconds to milliseconds (Figure~\ref{fig:landscape}), but all are
@@ -117,7 +114,7 @@ approach that neither wastes the CPU nor inflates latency.
   \label{fig:landscape}
 \end{figure}
 
-\paragraph{Where the machinery lives.}
+\paragraph{A taxonomy of concurrency models.}
 The thesis says to reroute the offload through the server's own concurrency, so the first question
 about any server is where that concurrency lives. Five models cover production practice. A
 \emph{single-event-loop} server (Redis, Node.js, a Python \texttt{asyncio} service) multiplexes all
@@ -128,7 +125,7 @@ runtime-scheduled tasks. A \emph{proxy} (HAProxy) can route requests through a n
 engine to an external agent. A \emph{process- or thread-per-connection} server (PostgreSQL,
 MariaDB) gives each connection its own backend, which the OS suspends and resumes wholesale.
 
-\paragraph{Prediction 1: the concurrency model sets the win and the cost.}
+\paragraph{Prediction 1: concurrency model determines speedup and code cost.}
 The same taxonomy predicts what a \emph{synchronous} offload costs and therefore what rerouting
 recovers (Figure~\ref{fig:regimes}). The extreme case is the single event loop: one thread handles
 every connection, so a synchronous offload stalls \emph{all} of them and throughput collapses to
@@ -139,11 +136,12 @@ offload stalls only one loop of several. A thread or goroutine pool overlaps off
 \emph{is} the routing. For a proxy, the reroute is configuration plus an external agent. And a
 per-connection database already overlaps \emph{across} connections for free (the OS runs the
 backends concurrently), leaving \emph{intra-query} pipelining of a serial offload loop as the only
-win. The code cost follows the same
-axis: where the server exposes a plugin API or a deferred-response primitive the reroute is purely
-additive; where it exposes none (memcached), the developer must add the suspend/resume transition
-to the request state machine by hand, which is where the line count comes from---including the
-only modified line.
+win.
+
+The \emph{code cost} follows the same axis: where the server exposes a plugin API or a
+deferred-response primitive the reroute is purely additive; where it exposes none (memcached), the
+developer must add the suspend/resume transition to the request state machine by hand, which is
+where the line count comes from---including the only modified line.
 
 \begin{figure}[t]
   \centering
@@ -155,7 +153,7 @@ only modified line.
   \label{fig:regimes}
 \end{figure}
 
-\paragraph{Prediction 2: offload weight decides whether overlap pays.}
+\paragraph{Prediction 2: offload weight determines whether overlap pays.}
 The second property is independent of the server. Overlap reclaims the CPU time the offload would
 have wasted, so if per-request CPU work already rivals the offload there is little to reclaim; the
 win grows with the offload's weight until a ceiling. There are two ceilings: the
@@ -171,7 +169,7 @@ be, and roughly how many lines it will take.
 
 
 % =====================================================================
-\section{The Recipe: Rerouting on Ten Servers}
+\section{Offload Rerouting on Ten Servers}
 \label{sec:recipe}
 
 The recipe is the thesis made concrete, and it is uniform across servers
@@ -186,7 +184,7 @@ The recipe is the thesis made concrete, and it is uniform across servers
 \begin{figure}[t]
   \centering
   \includegraphics[width=\linewidth]{figs/fig_recipe.pdf}
-  \caption{The recipe. Submit the offload to a background executor, suspend the request with the
+  \caption{The rerouting method. Submit the offload to a background executor, suspend the request with the
     server's own deferred-response primitive, and resume it to reply on completion. Meanwhile the
     server's loop serves other requests. The edit is small because the suspend/resume machinery
     already exists; one only reroutes the offload through it.}
@@ -232,17 +230,17 @@ void *worker(void *arg) {                 /* pool thread */
     memcached 1.6    & state-machine patch                        & 70  & 1 & $2.93\times$ \\
     Apache 2.4       & module (\texttt{apxs}), pooled workers     & 27  & 0 & $3.45\times$ \\
     Go 1.18          & plain blocking \texttt{cgo} call           & 28  & 0 & $3.01\times$ \\
+    HAProxy 2.4      & SPOE + standalone C agent                  & 138 & 0 & $2.10\times$ \\
     PostgreSQL 14    & C extension (intra-query)                  & 42  & 0 & $1.28\times^\dagger$ \\
     MariaDB 10.6     & UDF (intra-query)                          & 34  & 0 & $\sim$$1.9\times^\dagger$ \\
-    HAProxy 2.4      & SPOE + standalone C agent                  & 138 & 0 & $2.10\times$ \\
     \bottomrule
   \end{tabular}
-  \caption{The recipe on ten off-the-shelf servers (grouped by concurrency model: single event
-    loop, event loop + pool, thread/goroutine pool, per-connection database, proxy). ``+lines'' is
+  \caption{Offload rerouting on ten off-the-shelf servers (grouped by concurrency model: single event
+    loop, event loop + pool, thread/goroutine pool, proxy, per-connection database). ``+lines'' is
     integration code added; ``mod'' is existing lines modified. Speedups are over the synchronous
     offload with a real GPU ($1$\,MiB AES; $^\dagger$the databases pipeline a launch-bound op
     intra-query). Seven are stock server binaries; for Node.js, Python, and Go the server is an
-    idiomatic handler on the stock runtime.}
+    idiomatic handler on the stock runtime. Measurement setup: \S\ref{sec:eval}.}
   \label{tab:servers}
 \end{table}
 
@@ -258,7 +256,9 @@ asynchronous code, and a Python \texttt{asyncio}~\citep{cpython} service reroute
 \texttt{run\_in\_executor} in one line of handler code. A \emph{proxy} reroutes in
 configuration: HAProxy~\citep{haproxy} streams each request over its native Stream Processing
 Offload Engine (SPOE)~\citep{spoe} to a standalone offload agent (the proxy itself changes only configuration;
-the 138-line C agent carries the offload). The lone case that touches existing code is
+the 138-line C agent carries the offload).
+
+The lone case that touches existing code is
 memcached~\citep{memcached}, which exposes no deferred-response primitive, so we add the
 suspend/resume transition to its connection state machine by hand (70 lines, one modified). It is
 the exception that proves the structural claim: \textbf{the cost of the reroute is the distance to
@@ -285,7 +285,7 @@ origin.
 
 
 % =====================================================================
-\section{The Zero-Edit Limit}
+\section{The Zero-Edit Limit: Rerouting by Interposition}
 \label{sec:transparent}
 
 Can the reroute cost \emph{zero} lines? When there is no source access at all---a stock binary, a
@@ -294,7 +294,8 @@ dynamically linked binary passes through: the libc symbol boundary. Our transpar
 shared library loaded by \texttt{LD\_PRELOAD} that interposes the standard threading and I/O
 symbols. When the application creates a connection-handling thread, the runtime instead creates a
 \emph{fiber}---a user-level thread with a register-only context switch of tens of
-nanoseconds~\citep{fastwake}---and multiplexes all fibers on one carrier OS thread. Whenever a
+nanoseconds~\citep{fastwake}---and multiplexes all fibers on one \emph{carrier} OS thread
+(occupying a single core). Whenever a
 fiber would block, on socket I/O or on the offload, the runtime switches to another runnable
 fiber; a scheduler polls I/O readiness and offload completions and resumes the corresponding
 fiber, saving and restoring per-fiber libc state such as \texttt{errno} across switches. The
@@ -306,7 +307,7 @@ recipe's submit, suspend, and resume are injected from outside the binary
   \centering
   \includegraphics[width=0.92\linewidth]{figs/fig_runtime.pdf}
   \caption{The zero-edit limit. An \texttt{LD\_PRELOAD} library turns each connection thread into
-    a fiber on one carrier core; a fiber yields at its offload (and at socket I/O) and the
+    a fiber on one carrier thread; a fiber yields at its offload (and at socket I/O) and the
     scheduler runs another until the offload completes. The binary is unchanged. On a synchronous
     thread-per-connection handler with a real GPU this overlaps 64 connections' offloads for a
     $17.3\times$ gain over a busy-wait synchronous baseline ($11.9\times$ over OS-thread blocking).}
@@ -314,32 +315,39 @@ recipe's submit, suspend, and resume are injected from outside the binary
 \end{figure}
 
 On its home ground this works well: on a synchronous thread-per-connection handler with a real GPU
-performing AES, the runtime overlaps 64 connections' offloads on one carrier core and reaches
+performing AES, the runtime overlaps 64 connections' offloads on one carrier thread and reaches
 $17.3\times$ the throughput of the same binary busy-waiting on each offload, with results verified
 bit-for-bit ($11.9\times$ over a baseline that blocks in the driver and lets the OS overlap the 64
 threads\footnote{The blocking-baseline comparison was measured while a co-tenant shared the GPU
 (both sides equally affected); the busy-wait comparison ran on an otherwise idle GPU.}); a
-separately built DNN-inference server shows $11.8\times$. Making stock binaries run under the
+separately built DNN-inference server shows $11.8\times$.
+
+Making stock binaries run under the
 runtime took a catalog of interposition engineering---most notably a glibc condition-variable
 symbol-versioning hazard that silently corrupts some binaries and that any threading-interposing
 tool must fix---which Appendix~\ref{app:obstacles} records for practitioners.
 
-\paragraph{The envelope.}
+\paragraph{The interposition envelope.}
 The more useful contribution is the limit. A preloaded library virtualizes exactly one layer, the
 libc symbol boundary, so \textbf{its reach is the completeness of that layer}: behavior that
 escapes the layer is out of reach, and there are exactly three ways to escape it
-(Figure~\ref{fig:walls}). \emph{Below it}: a storage engine such as InnoDB synchronizes with raw
-\texttt{futex} system calls~\citep{futexes} issued directly, bypassing \texttt{pthread}; a fiber
-that blocks in a raw futex stalls the whole carrier, and under contention the server
-deadlocks---we confirmed this with a live backtrace of the frozen carrier inside InnoDB.
-\emph{Beside it}: a managed runtime such as the JVM keeps ``the current thread'' in a native
-thread-local slot read inline from a CPU register, which symbol interposition cannot virtualize
-per fiber; the moment two fiberized JVM requests interleave, the runtime reads the wrong thread
-object and segfaults (the same mechanism applies to Go and .NET). \emph{Behind it}: overlap needs idle
-CPU to reclaim, and a thread-per-connection TLS terminator that spends real CPU on per-request
-crypto has none---the OS already overlaps its offloads across threads, while the single carrier
-serializes the crypto and pays an interposition tax on every yield, ending up $2$--$3\times$
-\emph{slower} than native. These are properties of where an application places its behavior, not
+(Figure~\ref{fig:walls}).
+\begin{itemize}[leftmargin=1.4em,itemsep=2pt,topsep=2pt]
+  \item \emph{Below it.} A storage engine such as InnoDB synchronizes with raw
+    \texttt{futex} system calls~\citep{futexes} issued directly, bypassing \texttt{pthread}; a fiber
+    that blocks in a raw futex stalls the whole carrier, and under contention the server
+    deadlocks---we confirmed this with a live backtrace of the frozen carrier inside InnoDB.
+  \item \emph{Beside it.} A managed runtime such as the JVM keeps ``the current thread'' in a native
+    thread-local slot read inline from a CPU register, which symbol interposition cannot virtualize
+    per fiber; the moment two fiberized JVM requests interleave, the runtime reads the wrong thread
+    object and segfaults (the same mechanism applies to Go and .NET).
+  \item \emph{Behind it.} Overlap needs idle
+    CPU to reclaim, and a thread-per-connection TLS terminator that spends real CPU on per-request
+    crypto has none---the OS already overlaps its offloads across threads, while the single carrier
+    serializes the crypto and pays an interposition tax on every yield, ending up $2$--$3\times$
+    \emph{slower} than native.
+\end{itemize}
+These are properties of where an application places its behavior, not
 gaps in engineering; no interposition removes them.
 
 \begin{figure}[t]
@@ -352,7 +360,7 @@ gaps in engineering; no interposition removes them.
   \label{fig:walls}
 \end{figure}
 
-\paragraph{A classifier.}
+\paragraph{A syscall-profile classifier.}
 The envelope is predictable from the outside: we profile the per-request blocking syscalls a
 server makes under load (Figure~\ref{fig:classifier}). Event-driven servers show an
 \texttt{epoll}-dominated profile and have no per-connection thread to fiberize: the runtime loads
@@ -381,7 +389,7 @@ answer.
 
 
 % =====================================================================
-\section{What Rerouting Breaks: Correctness}
+\section{Correctness under Rerouting}
 \label{sec:correctness}
 
 Rerouting has one cost that is easy to miss. A single-threaded server runs each handler to
@@ -394,7 +402,7 @@ offload, and writes the incremented value back, unprotected overlap silently los
 thousands of updates (Figure~\ref{fig:correctness}, left). The more latency overlap hides, the
 wider the race it opens.
 
-\paragraph{The hazard is one pattern, not a general danger.}
+\paragraph{A measured taxonomy of shared-state patterns.}
 To scope the problem we enumerated the shared-state patterns that real offload-adjacent servers
 keep, and measured each under overlapped execution in race-instrumented harnesses spanning crypto
 (OpenSSL) and compression (zlib). Three patterns are unconditionally safe: \emph{read-only} shared
@@ -408,7 +416,7 @@ atomicity---the very atomicity rerouting removes. The dividing line is the state
 application domain: bulk crypto, compression, hashing, and stateless inference land safe because
 the heavy routine is pure and their shared state is read-only or already locked.
 
-\paragraph{A guard for the residual.}
+\paragraph{A transparent conflict detector.}
 The safe patterns need nothing. For the residual---unlocked shared aggregates---a
 transparent \emph{conflict detector} restores correctness with no application change: it
 write-protects the shared-state pages, snapshots a version clock when a handler parks at its
@@ -437,7 +445,11 @@ including the zero-edit limit.
 \section{Evaluation}
 \label{sec:eval}
 
-\paragraph{Setup.}
+This section validates the two predictions of \S\ref{sec:model} on real hardware---Prediction~1
+across the ten-server landscape, Prediction~2 by sweeping the offload's weight---and closes with
+latency under load.
+
+\paragraph{Experimental setup.}
 All cross-server offloads are real, on real hardware, with no emulated latencies; the one
 exception is the open-loop latency study of Figure~\ref{fig:latency}, which uses a controlled
 emulated offload and is labeled as such. Experiments run on a server with an NVIDIA RTX PRO 6000
@@ -450,7 +462,7 @@ signatures, post-quantum KEMs, remote inference) we stand up a real TCP signer d
 RSA-2048 signature per request. Servers are driven by standard load generators
 (\texttt{redis-benchmark}, \texttt{ab}).
 
-\paragraph{Prediction 1, validated across the landscape.}
+\paragraph{Validation of Prediction 1 across the server landscape.}
 On a $1$\,MiB GPU AES offload (realistic bulk crypto, idle GPU) the reroute recovers the win the
 model predicts in every regime, with no failed requests (Figure~\ref{fig:headline},
 Table~\ref{tab:servers}): single event loops and event-loop-with-pool servers cluster around
@@ -462,7 +474,7 @@ HAProxy's gain rides entirely on the offload \emph{agent}, so a 21-line GIL-boun
 gains nothing while a 138-line C \texttt{pthread}-pool agent recovers $2.1\times$ on the same
 offload.
 
-\paragraph{Prediction 2 and the two ceilings.}
+\paragraph{Validation of Prediction 2: offload weight and the two ceilings.}
 Sweeping the GPU AES offload by block size on a single event loop traces the weight dependence
 (Figure~\ref{fig:weight}; full table in Appendix~\ref{app:blocksize}): the same reroute gives
 essentially nothing for a light block ($1.24\times$ at $4$\,KiB, $46$\,\textmu s, where the offload
@@ -487,7 +499,7 @@ $1.2$--$5.4\times$.
   \label{fig:weight}
 \end{figure}
 
-\paragraph{Latency, not just throughput.}
+\paragraph{Latency under offered load.}
 Overlap is a latency win too. By keeping the CPU busy during offloads, the overlapping path holds
 both median and tail (p99) latency low up to roughly \emph{four times} the offered load that
 blocking can sustain before its knee (Figure~\ref{fig:latency}).
@@ -509,30 +521,27 @@ blocking can sustain before its knee (Figure~\ref{fig:latency}).
 \section{Discussion and Limitations}
 \label{sec:discussion}
 
-\paragraph{When not to apply the recipe.}
-The model's weight condition is also a stop sign: when per-request CPU rivals the offload there is
-little to reclaim, and rerouting buys complexity for nothing---the same condition that raises the
-transparent runtime's third wall. Likewise the two ceilings mean overlap recovers wasted
-utilization but never manufactures device throughput; an operator whose accelerator is already
-saturated should buy bandwidth, not rewire the server.
+\paragraph{When rerouting does not pay.}
+The model doubles as a stop sign. An operator whose per-request CPU already rivals the offload has
+little to reclaim, and rerouting buys complexity for nothing (Prediction~2 of
+\S\ref{sec:model}---the same condition that raises the transparent runtime's third wall). And an
+operator whose accelerator is already saturated should buy device bandwidth, not rewire the
+server: overlap recovers wasted utilization but never manufactures throughput.
 
-\paragraph{Scope of the guard.}
+\paragraph{Scope of the conflict detector.}
 The conflict detector is a targeted safety net for the one pattern rerouting endangers, not a
 general transactional memory; shared state outside the monitored segments, or correctness
-requirements beyond last-writer-wins, need stronger machinery. And the two ends of the spectrum
-are a division of labor, not competitors: zero-edit rerouting where there is no source access, the
-few-line recipe everywhere else (\S\ref{sec:transparent}).
+requirements beyond last-writer-wins, need stronger machinery.
 
 
 % =====================================================================
 \section{Related Work}
 \label{sec:related}
 
-Prior approaches to overlapping fine-grained waits either \emph{add} the concurrency---new
-frameworks, new runtimes, new operating systems---or hand-integrate one offload into one server.
-Our work occupies a different point (Figure~\ref{fig:positioning}): reuse the concurrency existing
-servers already have, across the whole landscape of server architectures, and predict the cost of
-doing so.
+Figure~\ref{fig:positioning} places this work among prior approaches, which either \emph{add} the
+concurrency---new frameworks, runtimes, and operating systems---or hand-integrate one offload into
+one server; we instead reuse the concurrency existing servers already have, across the whole
+landscape of server architectures, and predict the cost of doing so.
 
 \begin{figure}[t]
   \centering
