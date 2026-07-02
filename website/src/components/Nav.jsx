@@ -1,11 +1,11 @@
 import { LINKS } from '../data'
 
 const items = [
-  ['#problem', 'Problem'],
+  ['#problem', 'Motivation'],
   ['#model', 'Model'],
-  ['#recipe', 'The Recipe'],
+  ['#recipe', 'Method'],
   ['#transparent', 'Zero-Edit Limit'],
-  ['#envelope', 'The Envelope'],
+  ['#envelope', 'Envelope'],
   ['#correctness', 'Correctness'],
   ['#results', 'Evaluation'],
 ]

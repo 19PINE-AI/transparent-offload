@@ -8,7 +8,7 @@ import { ChartCard, ModelLegend, Tip, axisStyle, gridStroke } from './common'
 export default function HeadlineChart() {
   return (
     <ChartCard
-      title="Prediction 1, validated: the reroute recovers the win the model predicts in every regime"
+      title="Prediction 1: rerouting recovers the model-predicted speedup in every regime"
       sub="Real GPU, 1 MiB AES offload, idle device. Every integration: no failed requests."
       footer="The cluster tops out at 2–3.5× because this offload is bandwidth-bound: overlap fills the device but cannot exceed its throughput (at 8 MiB blocks the same reroute reaches 5.4×). Thread and goroutine pools reach 3.0–3.5× with no asynchronous code. The databases show only the predicted intra-query win with a launch-bound op (MariaDB ~1.9×)."
     >

@@ -40,7 +40,7 @@ function Star({ cx, cy }) {
 export default function SpectrumChart() {
   return (
     <ChartCard
-      title="The study in one plot: code cost vs. measured win"
+      title="Integration cost versus measured speedup, across the full study"
       sub="Lines added (log) vs. speedup from rerouting a real-GPU AES offload on an idle device (log); 1 MiB blocks, databases pipeline a launch-bound op intra-query."
       footer="The star is the zero-edit limit: the transparent runtime on an unmodified thread-per-connection binary, 17.3× — in its niche. The few-line reroutes (22–138 lines, at most one existing line modified) cluster at 2–3.5× across every concurrency model. HAProxy's 138 lines live in a standalone C agent; the proxy itself changes only configuration."
     >

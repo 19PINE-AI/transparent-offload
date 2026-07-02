@@ -10,7 +10,7 @@ export default function WeightChart() {
   const [mode, setMode] = useState('speedup')
   return (
     <ChartCard
-      title="Prediction 2, measured: overlap pays only when the offload outweighs per-request CPU"
+      title="Prediction 2: overlap pays only when the offload outweighs per-request CPU"
       sub="Real GPU AES on a single-event-loop server (Python asyncio, 50 clients), block size swept 4 KiB → 8 MiB."
       footer="At 4 KiB the offload is launch-bound (46 µs, on the order of the server’s own per-request work): 1.24×, nothing to reclaim. At 8 MiB it is bandwidth-bound (2.3 ms): 5.41×, approaching the GPU’s throughput — the first ceiling. The same weight condition is also a stop sign for the operator, and it raises the behind-the-layer escape of the interposition envelope."
     >

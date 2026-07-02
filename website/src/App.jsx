@@ -29,8 +29,8 @@ export default function App() {
 
       <Section
         id="problem"
-        kicker="01 · The Problem, and the Thesis"
-        title="What should the CPU do while it waits for the accelerator?"
+        kicker="01 · Motivation"
+        title="The fine-grained offload stall: blocking and busy-waiting both fail"
         lede={<>
           GPUs, TPUs, FPGAs — and increasingly <em>remote</em> calls to HSMs, post-quantum KEM services,
           and inference servers — all give a serving request the same shape: receive, pre-process,
@@ -60,8 +60,8 @@ export default function App() {
 
       <Section
         id="model"
-        kicker="02 · The Predictive Model"
-        title="Two properties predict the win and the cost — before writing any code"
+        kicker="02 · Predictive Model"
+        title="Concurrency model and offload weight predict speedup and code cost"
         lede={<>
           <strong>Prediction 1:</strong> the server’s concurrency model determines what a synchronous
           offload costs, and therefore what rerouting recovers and how many lines it takes — the first
@@ -78,8 +78,8 @@ export default function App() {
 
       <Section
         id="recipe"
-        kicker="03 · The Recipe"
-        title="Rerouting on ten servers: submit, suspend, resume"
+        kicker="03 · Method"
+        title="Offload rerouting through existing concurrency, on ten servers"
         accent={COLORS.green}
         lede={<>
           The recipe is the thesis made concrete, and it is uniform across servers: at the offload call
@@ -100,8 +100,8 @@ export default function App() {
 
       <Section
         id="transparent"
-        kicker="04 · The Zero-Edit Limit"
-        title="Can the reroute cost zero lines?"
+        kicker="04 · Zero-Edit Limit"
+        title="Transparent rerouting of unmodified binaries via library interposition"
         lede={<>
           When there is no source access at all — a stock binary, a vendor blob — the recipe cannot be
           applied from inside. But there is one suspension layer every dynamically linked binary passes
@@ -128,8 +128,8 @@ export default function App() {
 
       <Section
         id="envelope"
-        kicker="05 · The Interposition Envelope"
-        title="Its reach is the completeness of the layer it virtualizes"
+        kicker="05 · Interposition Envelope"
+        title="The limits of transparency: three escapes from the interposed layer"
         accent={COLORS.red}
         lede={<>
           A preloaded library virtualizes exactly one layer, the libc symbol boundary, so its reach is the
@@ -148,8 +148,8 @@ export default function App() {
 
       <Section
         id="correctness"
-        kicker="06 · What Rerouting Breaks"
-        title="Suspending a handler forfeits run-to-completion atomicity"
+        kicker="06 · Correctness"
+        title="Rerouting suspends run-to-completion atomicity: a measured taxonomy and a guard"
         accent={COLORS.red}
         lede={<>
           A single-threaded server runs each handler to completion, so handlers observe shared state
@@ -172,7 +172,7 @@ export default function App() {
       <Section
         id="results"
         kicker="07 · Evaluation"
-        title="Both predictions validated on real hardware"
+        title="Validation of both predictions on real hardware"
         lede={<>
           All cross-server offloads are real — GPU AES on its own CUDA stream on an NVIDIA RTX PRO 6000,
           and a real TCP signer doing genuine RSA-2048 signatures for the latency-bound remote class
@@ -201,8 +201,8 @@ export default function App() {
 
       <Section
         id="conclusion"
-        kicker="08 · Takeaway"
-        title="A practical recipe, and a map"
+        kicker="08 · Conclusion"
+        title="Fine-grained offload latency can be hidden in tens of lines"
         lede={<>
           What should the CPU do while it waits for the accelerator? Overlap the offload with other
           requests — and it does not need a new framework, runtime, or operating system to do so, because
