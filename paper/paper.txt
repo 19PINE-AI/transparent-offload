@@ -544,11 +544,12 @@ per-connection DB (intra-query)
 5
 
 Apache
-GoMariaDBmemcached
+memcached
+Go
 Redis
-Python
+MariaDB
 Postgresnginx
-Node.js
+Python Node.js
 HAProxy
 
 3

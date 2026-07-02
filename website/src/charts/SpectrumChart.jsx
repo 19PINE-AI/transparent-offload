@@ -9,7 +9,7 @@ import { ChartCard, ModelLegend, Tip, axisStyle, gridStroke } from './common'
 const LABEL_POS = {
   Redis: [10, -2, 'start'], 'Node.js': [0, 20, 'middle'], Python: [-10, -6, 'end'],
   nginx: [-10, 4, 'end'], memcached: [0, -12, 'middle'], Go: [-10, -4, 'end'],
-  Apache: [0, -12, 'middle'], Postgres: [10, 4, 'start'], MariaDB: [0, -12, 'middle'],
+  Apache: [0, -12, 'middle'], Postgres: [10, 4, 'start'], MariaDB: [-2, -18, 'start'],
   HAProxy: [0, 22, 'middle'],
 }
 

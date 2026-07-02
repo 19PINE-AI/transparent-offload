@@ -117,13 +117,13 @@ def fig_spectrum():
     pts = [   # (app, lines_added, speedup, regime_color, dx, dy, ha) -- real GPU AES
         ("Redis", 83, 3.01, SLATE, 9, 2, "left"),
         ("Node.js", 34, 2.54, SLATE, 0, -14, "center"),
-        ("Python", 22, 2.37, SLATE, -9, 5, "right"),
+        ("Python", 22, 2.37, SLATE, -9, -9, "right"),
         ("nginx", 112, 2.74, TEAL, 0, -14, "center"),
         ("memcached", 70, 2.93, TEAL, 0, 10, "center"),
         ("Go", 28, 3.01, GREEN, -9, 3, "right"),
         ("Apache", 27, 3.45, GREEN, 0, 9, "center"),
         ("Postgres", 42, 2.59, AMBER, 9, -3, "left"),
-        ("MariaDB", 34, 2.59, AMBER, 0, 9, "center"),   # nearly coincides with Node.js
+        ("MariaDB", 34, 2.59, AMBER, -9, 0, "right"),   # nearly coincides with Node.js
         ("HAProxy", 138, 2.10, PURPLE, 0, -15, "center"),   # standalone C SPOE agent
     ]
     fig, ax = plt.subplots(figsize=(6.6, 4.0))
