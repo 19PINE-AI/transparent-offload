@@ -20,9 +20,7 @@ is about a deceptively simple question: \emph{what should the CPU do while it wa
   \includegraphics[width=\linewidth]{figs/fig_pipeline.pdf}
   \caption{The problem. A serving request is \emph{receive $\to$ pre-process $\to$ offload $\to$
     post-process $\to$ send}. Top: with a synchronous offload, the CPU stalls while the accelerator
-    works. For fine-grained offloads (microseconds to a few milliseconds), a context switch to fill
-    the gap costs as much as the gap itself, and busy-waiting wastes the core. Bottom: \emph{overlap}
-    fills the gap with other requests' processing.}
+    works. Bottom: \emph{overlap} fills the gap with other requests' processing.}
   \label{fig:pipeline}
 \end{figure}
 
@@ -54,8 +52,7 @@ and MariaDB. Across the ten, the change is \textbf{22--138 lines added and zero 
 line modified}---the core of the Redis integration is a dozen lines
 (Listing~\ref{lst:redis})---and on real hardware it recovers $1.2$--$5.4\times$ across servers
 and offload weights, with no failed requests (Figure~\ref{fig:headline}). The cost is small for a structural reason, not a lucky one:
-the integration only bridges the offload to machinery that already exists, so its size is the
-distance to the server's nearest suspend/resume primitive.
+the integration only bridges the offload to machinery that already exists.
 
 That structure makes the outcome \emph{predictable}. Two properties of the deployment fix both the
 speedup and the code cost in advance: the server's \emph{concurrency model} determines what a
@@ -102,8 +99,7 @@ An accelerator turns a CPU-bound routine into a device operation: the CPU prepar
 buffer, submits it (a kernel launch, a DMA, or a network send), and later collects the result.
 These round-trips span microseconds to milliseconds (Figure~\ref{fig:landscape}), but all are
 \emph{fine-grained} relative to operating-system scheduling: the offload finishes on the timescale
-of a context switch, so blocking and busy-waiting are both wasteful, and overlap is the only
-approach that neither wastes the CPU nor inflates latency.
+of a context switch, so the dilemma of \S\ref{sec:intro} holds across the whole band.
 
 \begin{figure}[t]
   \centering
@@ -187,7 +183,7 @@ The recipe is the thesis made concrete, and it is uniform across servers
   \caption{The rerouting method. Submit the offload to a background executor, suspend the request with the
     server's own deferred-response primitive, and resume it to reply on completion. Meanwhile the
     server's loop serves other requests. The edit is small because the suspend/resume machinery
-    already exists; one only reroutes the offload through it.}
+    already exists.}
   \label{fig:recipe}
 \end{figure}
 
@@ -266,8 +262,7 @@ the server's nearest suspend/resume primitive}.
 
 We report \emph{lines added} separately from \emph{existing lines modified} because they carry
 different maintenance costs: added lines live in a module or extension and survive server
-upgrades; modified lines are the invasive part, and zero is achievable wherever an extension
-interface exists---nine of our ten servers. Figure~\ref{fig:spectrum} plots the whole study on one
+upgrades; modified lines are the invasive part. Figure~\ref{fig:spectrum} plots the whole study on one
 canvas: code cost against measured win, with the zero-edit limit of \S\ref{sec:transparent} at the
 origin.
 
@@ -277,7 +272,7 @@ origin.
   \caption{The study in one plot: lines of integration code vs.\ speedup from rerouting a real-GPU
     AES offload on an idle device ($1$\,MiB blocks; the databases pipeline a launch-bound op
     intra-query). The few-line reroute clusters at $2$--$3.5\times$ (the offload is
-    bandwidth-bound, so overlap fills the device but cannot exceed its throughput); the databases
+    bandwidth-bound, so device throughput is the ceiling); the databases
     sit lower; the zero-edit transparent runtime reaches $17.3\times$ in its niche
     (\S\ref{sec:transparent}). Color encodes the concurrency model.}
   \label{fig:spectrum}
@@ -310,7 +305,7 @@ recipe's submit, suspend, and resume are injected from outside the binary
     a fiber on one carrier thread; a fiber yields at its offload (and at socket I/O) and the
     scheduler runs another until the offload completes. The binary is unchanged. On a synchronous
     thread-per-connection handler with a real GPU this overlaps 64 connections' offloads for a
-    $17.3\times$ gain over a busy-wait synchronous baseline ($11.9\times$ over OS-thread blocking).}
+    $17.3\times$ gain over a busy-wait synchronous baseline.}
   \label{fig:runtime}
 \end{figure}
 
@@ -394,7 +389,7 @@ answer.
 
 Rerouting has one cost that is easy to miss. A single-threaded server runs each handler to
 completion, so handlers observe shared state atomically---an invariant the code \emph{silently}
-relies on precisely because the architecture provides it for free. Suspending a handler at its
+relies on. Suspending a handler at its
 offload breaks that invariant: if post-processing does a read-modify-write on shared state---a
 counter, a cache entry, a key in a store---two overlapped requests can interleave their sequences
 and lose updates. On a \emph{stock Redis server} whose module command reads a key, runs a real GPU
@@ -434,7 +429,7 @@ including the zero-edit limit.
   \caption{Guarding the one hazardous pattern, measured on a stock Redis server with a real GPU
     offload. Left: unprotected overlap of a shared read-modify-write loses $23{,}450$ updates. The
     page-protection detector flags $26{,}185$ conflicts and, under enforcement, reduces lost updates
-    to zero. Right: a coarse lock serializes the very offloads it protects ($13.8$K\,req/s), while the
+    to zero. Right: a coarse lock serializes all offloads ($13.8$K\,req/s), while the
     detector keeps non-conflicting offloads overlapped ($24.7$K\,req/s), $1.8\times$ faster
     ($1.7\times$ at low contention) and within noise of unprotected overlap ($24.1$K\,req/s).}
   \label{fig:correctness}
@@ -492,10 +487,9 @@ $1.2$--$5.4\times$.
   \centering
   \includegraphics[width=0.86\linewidth]{figs/fig_weight.pdf}
   \caption{Prediction 2, measured (real GPU, idle): overlap pays only when the offload outweighs
-    per-request CPU work. Sweeping a real GPU AES offload by block size (consecutive powers of two,
-    $4$\,KiB--$8$\,MiB) on a single-event-loop server, the same reroute gives little benefit for a
-    light block ($1.24\times$ at $4$\,KiB, $46$\,\textmu s) and rises to $5.41\times$ at $8$\,MiB
-    ($2.3$\,ms), approaching the GPU's bandwidth. Right axis: measured single-op GPU latency.}
+    per-request CPU work. On a single-event-loop server, the same reroute gives $1.24\times$ for a
+    light $4$\,KiB block ($46$\,\textmu s) and $5.41\times$ at $8$\,MiB ($2.3$\,ms), approaching
+    the GPU's bandwidth. Right axis: measured single-op GPU latency.}
   \label{fig:weight}
 \end{figure}
 
@@ -640,13 +634,10 @@ The author thanks BSQL Networking for hosting the NVIDIA RTX PRO 6000 GPU.
 Table~\ref{tab:blocksize} gives the full per-size measurements behind the offload-weight curve of
 Figure~\ref{fig:weight}, all on a real GPU on an \emph{idle} device (no co-tenant compute), driving a
 single-event-loop server (Python \texttt{asyncio} with a 32-thread executor) at 50 concurrent
-clients. The AES block size is swept over consecutive powers of two from $4$\,KiB to $8$\,MiB. For
-each we report the measured single-op GPU latency (one offload in flight), the synchronous and
-asynchronous throughput, and their ratio. The speedup grows from $1.24\times$ at
-$4$\,KiB (launch-bound: the offload is tens of microseconds, on the order of the server's own
-per-request work, so there is little to overlap) to $5.41\times$ at $8$\,MiB (the offload is
-bandwidth-bound at $\sim$$2.3$\,ms, so overlapping it across requests reclaims most of the wait), up
-to the GPU's throughput ceiling.
+clients. The AES block size is swept over consecutive powers of two from $4$\,KiB (launch-bound,
+tens of microseconds) to $8$\,MiB (bandwidth-bound, $\sim$$2.3$\,ms). For each we report the
+measured single-op GPU latency (one offload in flight), the synchronous and asynchronous
+throughput, and their ratio; \S\ref{sec:eval} interprets the curve.
 
 \begin{table}[h]
   \centering
