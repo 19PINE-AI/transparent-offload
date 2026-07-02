@@ -21,18 +21,19 @@ export const MODELS = {
 }
 
 // Headline: real GPU, 1 MiB AES, speedup over synchronous offload.
-// `approx`/`dagger`: the databases pipeline a launch-bound op intra-query.
+// `dagger`: the databases pipeline the op intra-query
+// (transparent-runtime/apps/db_intraquery_gpu.csv).
 export const HEADLINE = [
   { app: 'Apache',    speedup: 3.45, model: 'tpool', lines: 27 },
   { app: 'Redis',     speedup: 3.01, model: 'loop',  lines: 83 },
   { app: 'Go',        speedup: 3.01, model: 'tpool', lines: 28 },
   { app: 'memcached', speedup: 2.93, model: 'pool',  lines: 70 },
   { app: 'nginx',     speedup: 2.74, model: 'pool',  lines: 112 },
+  { app: 'MariaDB',   speedup: 2.59, model: 'db',    lines: 34, dagger: true },
+  { app: 'Postgres',  speedup: 2.59, model: 'db',    lines: 42, dagger: true },
   { app: 'Node.js',   speedup: 2.54, model: 'loop',  lines: 34 },
   { app: 'Python',    speedup: 2.37, model: 'loop',  lines: 22 },
   { app: 'HAProxy',   speedup: 2.10, model: 'proxy', lines: 138 },
-  { app: 'MariaDB',   speedup: 1.90, model: 'db',    lines: 34, approx: true, dagger: true },
-  { app: 'Postgres',  speedup: 1.28, model: 'db',    lines: 42, dagger: true },
 ]
 
 // Spectrum scatter: lines added vs speedup (log-log). Transparent runtime at ~0 lines.
@@ -116,7 +117,7 @@ export const REGIMES = [
   {
     title: 'Per-connection DB', color: COLORS.amber, examples: 'PostgreSQL · MariaDB',
     cost: 'The OS already suspends and resumes whole backends — overlap across connections is free.',
-    win: '1.3–1.9×', note: 'only intra-query pipelining of a serial offload loop remains', primitive: 'the OS scheduler',
+    win: '2.6×', note: 'only intra-query pipelining of a serial offload loop remains', primitive: 'the OS scheduler',
   },
 ]
 
@@ -177,8 +178,8 @@ export const INTEGRATIONS = [
   { app: 'memcached',  version: '1.6',  lines: 70,  mod: 1, speedup: '2.93×',  how: 'state-machine patch — the one server with no deferred-response primitive' },
   { app: 'Apache',     version: '2.4',  lines: 27,  mod: 0, speedup: '3.45×',  how: 'module (apxs), pooled workers overlap for free' },
   { app: 'Go',         version: '1.18', lines: 28,  mod: 0, speedup: '3.01×',  how: 'plain blocking cgo call; the goroutine scheduler is the routing' },
-  { app: 'PostgreSQL', version: '14',   lines: 42,  mod: 0, speedup: '1.28× †', how: 'C extension (intra-query pipelining)' },
-  { app: 'MariaDB',    version: '10.6', lines: 34,  mod: 0, speedup: '~1.9× †', how: 'UDF (intra-query pipelining)' },
+  { app: 'PostgreSQL', version: '14',   lines: 42,  mod: 0, speedup: '2.59× †', how: 'C extension (intra-query pipelining)' },
+  { app: 'MariaDB',    version: '10.6', lines: 34,  mod: 0, speedup: '2.59× †', how: 'UDF (intra-query pipelining)' },
   { app: 'HAProxy',    version: '2.4',  lines: 138, mod: 0, speedup: '2.10×',  how: 'SPOE + standalone C agent (the proxy changes only configuration)' },
 ]
 

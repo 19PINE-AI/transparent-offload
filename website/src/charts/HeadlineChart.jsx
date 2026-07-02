@@ -10,7 +10,7 @@ export default function HeadlineChart() {
     <ChartCard
       title="Prediction 1: rerouting recovers the model-predicted speedup in every regime"
       sub="Real GPU, 1 MiB AES offload, idle device. Every integration: no failed requests."
-      footer="The cluster tops out at 2–3.5× because this offload is bandwidth-bound: overlap fills the device but cannot exceed its throughput (at 8 MiB blocks the same reroute reaches 5.4×). Thread and goroutine pools reach 3.0–3.5× with no asynchronous code. The databases show only the predicted intra-query win with a launch-bound op (MariaDB ~1.9×)."
+      footer="The cluster tops out at 2–3.5× because this offload is bandwidth-bound: overlap fills the device but cannot exceed its throughput (at 8 MiB blocks the same reroute reaches 5.4×). Thread and goroutine pools reach 3.0–3.5× with no asynchronous code. The databases recover 2.6× through the one channel the model leaves them, pipelining the offloads within a query rather than across connections."
     >
       <ResponsiveContainer width="100%" height={380}>
         <BarChart data={HEADLINE} layout="vertical" margin={{ top: 4, right: 52, left: 8, bottom: 4 }}>

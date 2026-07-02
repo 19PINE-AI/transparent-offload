@@ -7,9 +7,9 @@ import { ChartCard, ModelLegend, Tip, axisStyle, gridStroke } from './common'
 
 // Per-point label offsets (from the paper's figure) so labels never collide.
 const LABEL_POS = {
-  Redis: [10, -2, 'start'], 'Node.js': [10, 2, 'start'], Python: [-10, -6, 'end'],
+  Redis: [10, -2, 'start'], 'Node.js': [0, 20, 'middle'], Python: [-10, -6, 'end'],
   nginx: [-10, 4, 'end'], memcached: [0, -12, 'middle'], Go: [-10, -4, 'end'],
-  Apache: [0, -12, 'middle'], Postgres: [0, 22, 'middle'], MariaDB: [10, 6, 'start'],
+  Apache: [0, -12, 'middle'], Postgres: [10, 4, 'start'], MariaDB: [0, -12, 'middle'],
   HAProxy: [0, 22, 'middle'],
 }
 
@@ -41,7 +41,7 @@ export default function SpectrumChart() {
   return (
     <ChartCard
       title="Integration cost versus measured speedup, across the full study"
-      sub="Lines added (log) vs. speedup from rerouting a real-GPU AES offload on an idle device (log); 1 MiB blocks, databases pipeline a launch-bound op intra-query."
+      sub="Lines added (log) vs. speedup from rerouting a real-GPU AES offload on an idle device (log); 1 MiB blocks, the databases pipeline the op intra-query."
       footer="The star is the zero-edit limit: the transparent runtime on an unmodified thread-per-connection binary, 17.3× — in its niche. The few-line reroutes (22–138 lines, at most one existing line modified) cluster at 2–3.5× across every concurrency model. HAProxy's 138 lines live in a standalone C agent; the proxy itself changes only configuration."
     >
       <ResponsiveContainer width="100%" height={400}>

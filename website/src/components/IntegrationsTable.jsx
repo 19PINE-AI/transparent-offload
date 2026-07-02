@@ -38,8 +38,8 @@ export default function IntegrationsTable() {
         </table>
       </div>
       <p className="note">
-        Speedups are over the synchronous offload with a real GPU (1 MiB AES; †the databases pipeline a
-        launch-bound op intra-query). Seven are stock server binaries; for Node.js, Python, and Go the
+        Speedups are over the synchronous offload with a real GPU (1 MiB AES; †the databases pipeline the
+        op intra-query: serial vs. pipelined offloads within one query). Seven are stock server binaries; for Node.js, Python, and Go the
         server is an idiomatic handler on the stock runtime. Added lines live in a module or extension and
         survive server upgrades; modified lines are the invasive part, and zero is achievable wherever an
         extension interface exists — nine of the ten. memcached, the one server with no deferred-response
