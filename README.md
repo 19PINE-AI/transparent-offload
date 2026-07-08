@@ -10,6 +10,8 @@ measures **how much an existing server must change to do that**, across ten off-
 and a zero-modification `LD_PRELOAD` fiber runtime, all on real hardware (NVIDIA RTX PRO 6000
 Blackwell GPU; a real RSA-2048 TCP signer for the remote-offload class).
 
+**Project page:** https://01.me/research/transparent-offload &nbsp;·&nbsp; **Paper:** [`paper/paper.pdf`](paper/paper.pdf)
+
 ## Layout
 
 | Directory | Contents |

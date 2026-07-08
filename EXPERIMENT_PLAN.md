@@ -215,4 +215,3 @@ Now fully runnable locally on the Blackwell GPU (torch 2.10+cu128; vLLM installs
   publish the safe-class version; still strong.
 - **"Just use async APIs"** → the whole point is *unmodified* apps; 6.3 shows we match
   hand-written async without the rewrite.
-```

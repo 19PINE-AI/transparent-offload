@@ -31,17 +31,18 @@ and a **runtime + performance study** (does it win?), both measured.
 | **Real third-party binary works** | stunnel under runtime: 8/8 TLS correct, fibers engage; Apache safe; MariaDB needs fiber-cond/rwlock | `transparent-runtime/THIRD_PARTY_APPS.md` |
 
 ## Reading order
-1. `EXPERIMENT_PLAN.md` — the full plan (GPU-updated).
-2. `AUTONOMOUS_SESSION_SUMMARY.md` — what was built/measured this session.
-3. `runtime/RUNTIME_RESULTS.md` — all performance numbers + figures.
-4. `conflict-measurement/{RESULTS,APPLICATION_CLASSES}.md` — the correctness study.
+1. `EXPERIMENT_PLAN.md` — the full experimental plan.
+2. `runtime/RUNTIME_RESULTS.md` — all performance numbers + figures.
+3. `conflict-measurement/{RESULTS,APPLICATION_CLASSES}.md` — the correctness study.
+4. `transparent-runtime/TRANSPARENCY_RESULTS.md` — the LD_PRELOAD M:N runtime.
 
 ## Build notes
 - CUDA: `/usr/local/cuda-12.8/bin/nvcc -arch=sm_120` (Blackwell). PATH nvcc is 11.5, won't work.
 - Emulated-accelerator experiments run under `sudo` (SCHED_FIFO on non-isolated cores).
 - TSan study needs `sudo sysctl -w vm.mmap_rnd_bits=28` on this 6.8 kernel.
 
-## Honest gaps (next, supervised)
-- **[DONE]** Full transparent M:N runtime on unmodified binaries (`transparent-runtime/`): real LD_PRELOAD overlap + correctness on 5 binaries/configs incl. real GPU (17.3x) and stock-nginx safety. Boundary documented: overlap applies to thread-per-connection; event-loop servers run safely but need the runtime to own the loop for overlap.
-- **[DONE]** Open-loop latency-vs-load generator (`runtime/openloop.{c,csv}`, `fig_openloop.png`): overlap holds p50+p99 low to ~4× the offered load of blocking (knee ~410K vs ~103K req/s). Source for the paper's latency figure.
-- Real vLLM/Triton under TSan (Phase 5.1); wire runtime under nginx (Phase 3.1).
+## Limitations and future work
+The overlap transform applies to thread-per-connection binaries; event-loop servers run
+safely under the runtime but need it to own the loop before they gain overlap (boundary
+documented in `transparent-runtime/TRANSPARENCY_RESULTS.md`). Pulling real vLLM/Triton under
+the TSan method and wiring the runtime beneath stock nginx's own event loop remain future work.
