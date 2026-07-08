@@ -184,14 +184,17 @@ export const INTEGRATIONS = [
 ]
 
 export const LINKS = {
+  arxiv: 'https://arxiv.org/abs/2607.02630',
   pdf: 'https://github.com/19PINE-AI/transparent-offload/blob/main/paper/paper.pdf',
   code: 'https://github.com/19PINE-AI/transparent-offload',
   site: 'https://01.me/research/transparent-offload',
 }
 
 export const BIBTEX = `@misc{transparentoffload,
-  author = {Li, Bojie},
-  title  = {Fine-Grained Computation Offload for Off-the-Shelf Servers in Tens of Lines},
-  year   = {2026},
-  url    = {https://github.com/19PINE-AI/transparent-offload},
+  author        = {Li, Bojie},
+  title         = {Fine-Grained Computation Offload for Off-the-Shelf Servers in Tens of Lines},
+  year          = {2026},
+  eprint        = {2607.02630},
+  archivePrefix = {arXiv},
+  url           = {https://arxiv.org/abs/2607.02630},
 }`

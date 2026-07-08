@@ -20,7 +20,7 @@ export default function Nav() {
             <a key={href} href={href}>{label}</a>
           ))}
         </div>
-        <a className="nav-cta" href={LINKS.pdf} target="_blank" rel="noreferrer">Paper PDF</a>
+        <a className="nav-cta" href={LINKS.arxiv} target="_blank" rel="noreferrer">arXiv</a>
       </div>
     </nav>
   )

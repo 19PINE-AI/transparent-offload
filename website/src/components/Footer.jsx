@@ -6,7 +6,8 @@ export default function Footer() {
       <div className="container">
         <h3>Cite this work</h3>
         <p>
-          Paper: <a href={LINKS.pdf} target="_blank" rel="noreferrer">PDF</a> ·
+          Paper: <a href={LINKS.arxiv} target="_blank" rel="noreferrer">arXiv:2607.02630</a> ·
+          <a href={LINKS.pdf} target="_blank" rel="noreferrer">PDF</a> ·
           Code &amp; artifacts: <a href={LINKS.code} target="_blank" rel="noreferrer">github.com/19PINE-AI/transparent-offload</a> ·
           Project page: <a href={LINKS.site} target="_blank" rel="noreferrer">01.me/research/transparent-offload</a>
         </p>

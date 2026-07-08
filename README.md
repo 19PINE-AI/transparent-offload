@@ -10,7 +10,7 @@ measures **how much an existing server must change to do that**, across ten off-
 and a zero-modification `LD_PRELOAD` fiber runtime, all on real hardware (NVIDIA RTX PRO 6000
 Blackwell GPU; a real RSA-2048 TCP signer for the remote-offload class).
 
-**Project page:** https://01.me/research/transparent-offload &nbsp;·&nbsp; **Paper:** [`paper/paper.pdf`](paper/paper.pdf)
+**arXiv:** https://arxiv.org/abs/2607.02630 &nbsp;·&nbsp; **Project page:** https://01.me/research/transparent-offload &nbsp;·&nbsp; **Paper PDF:** [`paper/paper.pdf`](paper/paper.pdf)
 
 ## Layout
 
@@ -34,10 +34,13 @@ If you use this work, please cite the paper:
 
 ```bibtex
 @misc{transparentoffload,
-  author = {Li, Bojie},
-  title  = {Fine-Grained Computation Offload for Off-the-Shelf Servers in Tens of Lines},
-  year   = {2026},
-  url    = {https://github.com/19PINE-AI/transparent-offload},
+  author        = {Li, Bojie},
+  title         = {Fine-Grained Computation Offload for Off-the-Shelf Servers in Tens of Lines},
+  year          = {2026},
+  eprint        = {2607.02630},
+  archivePrefix = {arXiv},
+  url           = {https://arxiv.org/abs/2607.02630},
+  note          = {Code and data: https://github.com/19PINE-AI/transparent-offload},
 }
 ```
 

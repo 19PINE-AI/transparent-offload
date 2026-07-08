@@ -25,7 +25,7 @@ export default function Hero() {
             <strong>Bojie Li</strong> · Pine AI
           </p>
           <div className="hero-actions">
-            <a className="btn btn-primary" href={LINKS.pdf} target="_blank" rel="noreferrer">Read the paper</a>
+            <a className="btn btn-primary" href={LINKS.arxiv} target="_blank" rel="noreferrer">Read on arXiv</a>
             <a className="btn btn-ghost" href={LINKS.code} target="_blank" rel="noreferrer">Code on GitHub</a>
             <a className="btn btn-ghost" href="#results">Jump to results ↓</a>
           </div>
